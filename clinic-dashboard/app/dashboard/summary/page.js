@@ -9,10 +9,6 @@ export default function SummaryPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, waiting: 0, done: 0, skipped: 0 });
 
-  useEffect(() => {
-    fetchTodayPatients();
-  }, []);
-
   async function fetchTodayPatients() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -45,6 +41,10 @@ export default function SummaryPage() {
     
     setLoading(false);
   }
+
+  useEffect(() => {
+    fetchTodayPatients();
+  }, []);
 
   return (
     <div>
