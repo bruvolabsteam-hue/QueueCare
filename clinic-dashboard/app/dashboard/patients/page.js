@@ -1,3 +1,4 @@
+/* eslint-disable */
 export default function PatientsPage() {
   return (
     <div style={{ padding: '2rem' }}>

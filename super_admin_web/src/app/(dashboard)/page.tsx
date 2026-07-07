@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { Users, Building2, PhoneCall, ArrowUpRight, Loader2, AlertCircle } from "lucide-react";

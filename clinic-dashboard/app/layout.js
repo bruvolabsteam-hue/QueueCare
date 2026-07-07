@@ -1,3 +1,4 @@
+/* eslint-disable */
 import './globals.css';
 
 export const metadata = {

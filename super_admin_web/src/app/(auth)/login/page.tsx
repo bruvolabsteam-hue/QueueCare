@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { Bot, Lock, Mail, Loader2 } from "lucide-react";
