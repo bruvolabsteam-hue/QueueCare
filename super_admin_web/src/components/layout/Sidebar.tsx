@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, Settings, BarChart3, Bot, CreditCard, Ticket } from "lucide-react";
+import { LayoutDashboard, Building2, Settings, BarChart3, Bot, CreditCard, Ticket, ShieldCheck } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Clinics", href: "/clinics", icon: Building2 },
+  { name: "Security & Access", href: "/security", icon: ShieldCheck },
   { name: "Billing", href: "/billing", icon: CreditCard },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Support", href: "/support", icon: Ticket },
   { name: "Global AI Config", href: "/settings/ai", icon: Bot },
   { name: "System Settings", href: "/settings/system", icon: Settings },
 ];
+
 
 export default function Sidebar() {
   const pathname = usePathname();

@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "serverUrl": "https://mcp.supabase.com/mcp?project_ref=oddvrnamlsenvftbnzic&read_only=true&features=database%2Cdevelopment%2Cdocs%2Cbranching%2Cdebugging%2Cfunctions"
+    }
+  }
+}
