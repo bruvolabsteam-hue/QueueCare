@@ -20,7 +20,10 @@ export default function DashboardPage() {
       if (!user) return;
 
       const { data: staffData } = await supabase.from('staff').select('clinic_id').eq('email', user.email).single();
-      if (!staffData) return;
+      if (!staffData) {
+        setLoading(false);
+        return;
+      }
       const clinicId = staffData.clinic_id;
 
       const today = new Date().toISOString().split('T')[0];
@@ -77,6 +80,13 @@ export default function DashboardPage() {
 
   return (
     <div>
+      {!stats.activeDoctors && stats.totalPatientsToday === 0 && stats.avgWaitTime === 0 && stats.recentPatients.length === 0 ? (
+        <div style={{padding: '2rem', textAlign: 'center'}}>
+           <h3>Setting up your clinic workspace...</h3>
+           <p style={{color: 'var(--color-text-secondary)'}}>If this takes more than a few seconds, please contact support.</p>
+        </div>
+      ) : (
+      <>
       <div className={styles.grid}>
         <div className={styles.statCard}>
           <div className={styles.statTitle}>Total Patients Today</div>
@@ -136,6 +146,8 @@ export default function DashboardPage() {
           </table>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

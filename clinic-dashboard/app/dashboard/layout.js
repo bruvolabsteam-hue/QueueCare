@@ -1,13 +1,30 @@
 /* eslint-disable */
 'use client';
-
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 import styles from './dashboard.module.css';
 
 export default function DashboardLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
+  const supabase = createClient();
+  const [userEmail, setUserEmail] = useState('');
+  const [userName, setUserName] = useState('Admin');
+
+  useEffect(() => {
+    async function getUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email);
+        if (user.user_metadata?.full_name) {
+          setUserName(user.user_metadata.full_name);
+        }
+      }
+    }
+    getUser();
+  }, []);
 
   return (
     <div className={styles.layout}>
@@ -54,6 +71,9 @@ export default function DashboardLayout({ children }) {
         </nav>
         
         <div className={styles.bottomNav}>
+          <div style={{padding: '0.5rem 1rem', marginBottom: '0.5rem', fontSize: '0.8rem', color: 'var(--color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis'}}>
+            {userEmail}
+          </div>
           <a href="#" className={styles.navItem} onClick={(e) => { e.preventDefault(); router.push('/'); }}>
             <svg className={styles.navIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             Sign Out
@@ -67,8 +87,8 @@ export default function DashboardLayout({ children }) {
           <h2 className={styles.headerTitle}>Clinic Dashboard</h2>
           <div className={styles.headerActions}>
             <div className={styles.userProfile}>
-              <div className={styles.avatar}>A</div>
-              <span className={styles.userName}>Admin</span>
+              <div className={styles.avatar}>{userName ? userName.charAt(0).toUpperCase() : 'A'}</div>
+              <span className={styles.userName}>{userName}</span>
             </div>
           </div>
         </header>
