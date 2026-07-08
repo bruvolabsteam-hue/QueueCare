@@ -1,7 +1,7 @@
 /* eslint-disable */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 
@@ -12,9 +12,20 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   
   const supabase = createClient();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const urlError = searchParams.get('error');
+      if (urlError) {
+        setError(`Authentication Failed: ${decodeURIComponent(urlError)}`);
+      }
+    }
+  }, []);
 
   const handleAuth = async (e) => {
     e.preventDefault();
