@@ -17,7 +17,6 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         {children}
-        <script src="/security-shield.js" defer></script>
       </body>
     </html>
   );
