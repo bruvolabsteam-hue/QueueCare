@@ -32,12 +32,17 @@ export default function Login() {
     setError('');
     
     if (isSignUp) {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
-      if (signUpError) setError(signUpError.message);
-      else setError('Check your email for the confirmation link!');
+      if (signUpError) {
+        setError(signUpError.message);
+      } else if (data?.session) {
+        router.push('/dashboard');
+      } else {
+        setError('Check your email for the confirmation link!');
+      }
     } else {
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
