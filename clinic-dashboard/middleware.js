@@ -30,7 +30,7 @@ export async function middleware(request) {
     const url = request.nextUrl;
 
     // Public routes that don't need auth
-    const publicPaths = ['/', '/kiosk', '/display', '/api/voice'];
+    const publicPaths = ['/', '/auth', '/kiosk', '/display', '/api/voice'];
     const isPublicPath = publicPaths.some(p => url.pathname === p || url.pathname.startsWith(p + '/'));
 
     // If user is NOT logged in and trying to access protected routes -> redirect to login
