@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/utils/supabase/client";
 
 export default function VaultPage() {
   const [whatsappNumber, setWhatsappNumber] = useState("");
@@ -13,7 +13,7 @@ export default function VaultPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   useEffect(() => {
     async function loadGlobalSettings() {
