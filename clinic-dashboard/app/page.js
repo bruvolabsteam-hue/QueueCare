@@ -10,7 +10,6 @@ import { createClient } from '../utils/supabase/client';
 export default function Login() {
   const router = useRouter();
   const [clinicName, setClinicName] = useState('');
-  const [doctorName, setDoctorName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,18 +52,12 @@ export default function Login() {
     const email = `${clinicSlug}@queuecare.com`;
 
     if (isSignUp) {
-      if (!doctorName.trim()) {
-        setError('Please enter your name.');
-        setLoading(false);
-        return;
-      }
-
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            full_name: doctorName,
+            full_name: 'Admin',
             clinic_name: clinicName,
             clinic_slug: clinicSlug
           }
@@ -148,24 +141,7 @@ export default function Login() {
             </div>
           </div>
 
-          {isSignUp && (
-            <div className={styles.inputGroup}>
-              <label className={styles.label}>Doctor / Admin Name</label>
-              <div className={styles.inputWrapper}>
-                <svg className={styles.inputIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
-                <input 
-                  type="text" 
-                  className={styles.input} 
-                  placeholder="e.g. Dr. Suresh"
-                  value={doctorName}
-                  onChange={(e) => setDoctorName(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-          )}
+          
 
           <div className={styles.inputGroup}>
             <label className={styles.label}>Password</label>
