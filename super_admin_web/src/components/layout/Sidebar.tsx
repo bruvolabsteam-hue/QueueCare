@@ -13,6 +13,7 @@ const navigation = [
   { name: "Support", href: "/support", icon: Ticket },
   { name: "Global AI Config", href: "/settings/ai", icon: Bot },
   { name: "System Settings", href: "/settings/system", icon: Settings },
+  { name: "API Key Vault", href: "/settings/vault", icon: ShieldCheck },
 ];
 
 
