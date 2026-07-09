@@ -39,7 +39,7 @@ export default function SettingsPage() {
     e.preventDefault();
     setSaving(true);
     
-    await supabase.from('clinics').update({
+    const { error } = await supabase.from('clinics').update({
       clinic_name: clinic.clinic_name,
       brand_color: clinic.brand_color,
       tagline: clinic.tagline,
@@ -56,7 +56,12 @@ export default function SettingsPage() {
     }).eq('id', clinic.id);
 
     setSaving(false);
-    alert('Settings saved!');
+    if (error) {
+      console.error(error);
+      alert('Error saving settings: ' + error.message);
+    } else {
+      alert('Settings saved successfully!');
+    }
   };
 
   if (loading) return <div style={{padding: '2rem'}}>Loading...</div>;
