@@ -88,9 +88,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [pathname, router]);
 
   const login = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    let data, error;
     
-    if (error) throw new Error(error.message);
+    // First, try to log in
+    const authRes = await supabase.auth.signInWithPassword({ email, password });
+    data = authRes.data;
+    error = authRes.error;
+
+    // If it fails because the account doesn't exist, sign them up!
+    if (error && error.message.includes('Invalid login credentials')) {
+      const signUpRes = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: email.split('@')[0].toUpperCase() } // Basic name fallback
+        }
+      });
+      
+      if (signUpRes.error) {
+        throw new Error(signUpRes.error.message);
+      }
+      
+      data = signUpRes.data;
+      error = signUpRes.error;
+    } else if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data.user) throw new Error("Could not log in or sign up.");
 
     // Verify the user is a super_admin using the RPC
     const profile = await fetchUserProfile(data.user.id, data.user.email || '');

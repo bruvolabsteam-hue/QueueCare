@@ -59,20 +59,23 @@ export default function Login() {
             
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                Email Address
+                Team Member
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-slate-400" />
+                  <Bot className="h-5 w-5 text-slate-400" />
                 </div>
-                <input
-                  type="email"
+                <select
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all text-slate-900 dark:text-white"
-                  placeholder="admin@queuecare.com"
+                  className="block w-full pl-10 px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all text-slate-900 dark:text-white appearance-none cursor-pointer"
                   required
-                />
+                >
+                  <option value="" disabled>Select your name...</option>
+                  <option value="admin1@queuecare.local">Admin 1</option>
+                  <option value="admin2@queuecare.local">Admin 2</option>
+                  <option value="admin3@queuecare.local">Admin 3</option>
+                </select>
               </div>
             </div>
 
@@ -100,7 +103,7 @@ export default function Login() {
               disabled={loading}
               className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-md text-sm font-semibold text-white bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign in to Dashboard"}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign in (or create password)"}
             </button>
           </form>
         </div>
