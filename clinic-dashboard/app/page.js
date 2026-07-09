@@ -50,7 +50,7 @@ export default function Login() {
       return;
     }
 
-    const email = `${clinicSlug}@queuecare.internal`;
+    const email = `${clinicSlug}@queuecare.com`;
 
     if (isSignUp) {
       if (!doctorName.trim()) {
