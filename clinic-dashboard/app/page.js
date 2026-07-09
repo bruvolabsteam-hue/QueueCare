@@ -72,7 +72,12 @@ export default function Login() {
       });
       
       if (signUpError) {
-        setError(signUpError.message);
+        console.error('Sign Up Error:', signUpError);
+        setError(
+          signUpError.message === '{}' || !signUpError.message 
+            ? `Error: ${JSON.stringify(signUpError)}` 
+            : signUpError.message
+        );
         setLoading(false);
       } else if (data?.session) {
         router.push('/dashboard');
@@ -120,7 +125,7 @@ export default function Login() {
 
         {error && (
           <div className={styles.errorBox}>
-            {error}
+            {typeof error === 'string' ? error : JSON.stringify(error)}
           </div>
         )}
 
