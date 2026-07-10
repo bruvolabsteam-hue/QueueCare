@@ -46,20 +46,33 @@ INSTRUCTIONS:
 4. Do not use complex formatting.`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: modelVersion,
-      max_tokens: 150,
-      temperature: 0.2,
-      system: systemPrompt,
-      messages: [
-        { role: 'user', content: message }
-      ]
+    // TEMPORARY GROQ OVERRIDE FOR TESTING (Using database key)
+    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${settings.anthropic_api_key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama3-8b-8192',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message }
+        ],
+        temperature: 0.2,
+        max_tokens: 150
+      })
     });
 
-    // @ts-ignore - The response type structure guarantees content[0].text for text blocks
-    return response.content[0].text;
+    const data = await groqResponse.json();
+    if (!groqResponse.ok) {
+      console.error("Groq API Error:", data);
+      return "I am experiencing technical difficulties. Please check back later.";
+    }
+
+    return data.choices[0].message.content;
   } catch (err) {
-    console.error("Claude Generation Error:", err);
+    console.error("Groq Generation Error:", err);
     return "I am experiencing technical difficulties. Please check back later.";
   }
 }
