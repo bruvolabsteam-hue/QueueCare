@@ -65,6 +65,16 @@ export default function QueueView({ doctorId = 'all', doctors = [], clinicId, st
 
   const updateStatus = async (id, status, is_no_show = false) => {
     await supabase.from('patients').update({ status, is_no_show }).eq('id', id);
+    
+    // Trigger SMS/WhatsApp alert when patient is called
+    if (status === 'called') {
+      const superAdminUrl = process.env.NEXT_PUBLIC_SUPER_ADMIN_URL || 'http://localhost:3000';
+      fetch(`${superAdminUrl}/api/outbound/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient_id: id, event_type: 'queue_alert' })
+      }).catch(err => console.error('Notification failed:', err));
+    }
   };
 
   const handleAddPatient = async (e) => {
@@ -72,7 +82,7 @@ export default function QueueView({ doctorId = 'all', doctors = [], clinicId, st
     if (!clinicId || !newPatient.name || !newPatient.phone) return;
     
     setIsAdding(true);
-    const { error } = await supabase.rpc('generate_daily_token', {
+    const { data: generatedPatient, error } = await supabase.rpc('generate_daily_token', {
       p_clinic_id: clinicId,
       p_name: newPatient.name,
       p_phone: newPatient.phone,
@@ -86,6 +96,16 @@ export default function QueueView({ doctorId = 'all', doctors = [], clinicId, st
     } else {
       setShowAddModal(false);
       setNewPatient({ name: '', phone: '', doctor_id: doctorId === 'all' ? '' : doctorId });
+      
+      // Trigger Welcome SMS/WhatsApp
+      if (generatedPatient) {
+        const superAdminUrl = process.env.NEXT_PUBLIC_SUPER_ADMIN_URL || 'http://localhost:3000';
+        fetch(`${superAdminUrl}/api/outbound/notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patient_id: generatedPatient, event_type: 'welcome' })
+        }).catch(err => console.error('Welcome notification failed:', err));
+      }
     }
   };
 
