@@ -1,10 +1,10 @@
-# QueueCare Platform
+# BruvoFlow Platform
 
-QueueCare is a dual-dashboard platform designed to streamline clinic wait times and patient queueing. 
+BruvoFlow is a dual-dashboard platform designed to streamline clinic wait times and patient queueing. 
 
 ## Live Deployments
-- **Super Admin Dashboard:** [https://queue-care-superadmin.vercel.app](https://queue-care-superadmin.vercel.app)
-- **Clinic Dashboard:** [https://queue-care-bruvolabs.vercel.app](https://queue-care-bruvolabs.vercel.app)
+- **Super Admin Dashboard:** [https://bruvoflow-superadmin.vercel.app](https://bruvoflow-superadmin.vercel.app)
+- **Clinic Dashboard:** [https://bruvoflow-bruvolabs.vercel.app](https://bruvoflow-bruvolabs.vercel.app)
 
 ## Project Structure
 - `/super_admin_web` - The Next.js 16/TypeScript dashboard for system administrators. Manages platform billing, API keys, and global AI configuration.
