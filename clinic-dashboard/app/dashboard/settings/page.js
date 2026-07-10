@@ -111,8 +111,8 @@ export default function SettingsPage() {
               <input type="text" placeholder="+919876543210" value={clinic.whatsapp_sender_number || ''} onChange={e => setClinic({...clinic, whatsapp_sender_number: e.target.value})} style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px'}} />
             </div>
             <div>
-              <label style={{display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px'}}>Voice Call (Exotel/Vapi) Caller ID</label>
-              <input type="text" placeholder="08047112345" value={clinic.exotel_caller_id || ''} onChange={e => setClinic({...clinic, exotel_caller_id: e.target.value})} style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px'}} />
+              <label style={{display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px'}}>Bland AI Phone Number</label>
+              <input type="text" placeholder="+1 (555) 000-0000" value={clinic.exotel_caller_id || ''} onChange={e => setClinic({...clinic, exotel_caller_id: e.target.value})} style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px'}} />
             </div>
           </div>
         </section>
