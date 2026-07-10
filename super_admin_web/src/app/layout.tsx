@@ -32,7 +32,6 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>{children}</AuthProvider>
-        <script src="/security-shield.js" defer></script>
       </body>
     </html>
   );
