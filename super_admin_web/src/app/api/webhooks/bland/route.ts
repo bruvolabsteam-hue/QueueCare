@@ -7,13 +7,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     // Bland AI usually sends the caller's phone number and the tool arguments
-    const { phone_number } = body;
+    const { phone_number, to_number } = body;
 
     if (!phone_number) {
       return NextResponse.json({ error: 'Missing phone number' }, { status: 400 });
     }
 
-    console.log(`Bland AI checking queue for: ${phone_number}`);
+    console.log(`Bland AI checking queue for: ${phone_number} (dialed: ${to_number})`);
 
     // 1. Format phone number to match database (add '+' if missing)
     const searchPhone = phone_number.startsWith('+') ? phone_number : `+${phone_number}`;
@@ -29,13 +29,29 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error || !patient) {
+      // 3. If patient is NOT found (New Patient), try to figure out which clinic they called
+      let clinicName = "the clinic";
+      if (to_number) {
+        const { data: clinicData } = await supabaseAdmin
+          .from('clinics')
+          .select('clinic_name')
+          .eq('exotel_caller_id', to_number)
+          .limit(1)
+          .single();
+        
+        if (clinicData) {
+          clinicName = clinicData.clinic_name;
+        }
+      }
+
       return NextResponse.json({ 
-        message: "No active token found for this phone number.",
-        has_appointment: false
+        has_appointment: false,
+        clinic_name: clinicName,
+        message: `Welcome to ${clinicName}. I don't see an active appointment for you right now.`
       });
     }
 
-    // 3. Return the exact data Bland AI needs to speak to the patient
+    // 4. Return the exact data Bland AI needs to speak to the existing patient
     const peopleAhead = Math.max(0, patient.token_number - (patient.clinic?.current_token || 0));
 
     return NextResponse.json({
