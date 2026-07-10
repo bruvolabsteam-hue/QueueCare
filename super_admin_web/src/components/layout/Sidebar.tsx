@@ -11,9 +11,8 @@ const navigation = [
   { name: "Billing", href: "/billing", icon: CreditCard },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Support", href: "/support", icon: Ticket },
-  { name: "Global AI Config", href: "/settings/ai", icon: Bot },
+  { name: "Global AI & Vault", href: "/settings/ai", icon: Bot },
   { name: "System Settings", href: "/settings/system", icon: Settings },
-  { name: "API Key Vault", href: "/settings/vault", icon: ShieldCheck },
 ];
 
 
