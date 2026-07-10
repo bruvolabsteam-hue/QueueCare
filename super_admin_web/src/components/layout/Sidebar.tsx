@@ -37,7 +37,7 @@ export default function Sidebar() {
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             return (
-              <Link
+              <a
                 key={item.name}
                 href={item.href}
                 className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${
@@ -53,7 +53,7 @@ export default function Sidebar() {
                   aria-hidden="true"
                 />
                 {item.name}
-              </Link>
+              </a>
             );
           })}
         </nav>
