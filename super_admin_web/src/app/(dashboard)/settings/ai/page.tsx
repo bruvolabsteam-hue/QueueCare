@@ -135,31 +135,31 @@ export default function GlobalAIConfig() {
             </div>
           </section>
 
-          {/* Exotel Settings */}
+          {/* Bland AI Settings */}
           <section className="space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-200/50 dark:border-slate-700/50 pb-2">
               <Phone className="h-5 w-5 text-indigo-500" />
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Exotel Voice Telecom</h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Bland AI Voice Agent</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Account SID</label>
+                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Bland AI Phone Number</label>
                 <input 
                   type="text" 
                   value={exotelSid}
                   onChange={e => setExotelSid(e.target.value)}
-                  placeholder="exotel_omnicare_01"
+                  placeholder="+1 (555) 000-0000"
                   className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500" 
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Voice API Key</label>
+                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Bland API Key</label>
                 <div className="relative">
                   <input 
                     type={showKeys['exotel'] ? "text" : "password"} 
                     value={voiceKey}
                     onChange={e => setVoiceKey(e.target.value)}
-                    placeholder="xxxxxxxxxxxxxxx"
+                    placeholder="sk-bland-xxxxxxxxxxxxxxx"
                     className="w-full pl-3 pr-10 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 font-mono" 
                   />
                   <button type="button" onClick={() => toggleKey('exotel')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
