@@ -170,6 +170,42 @@ export default function GlobalAIConfig() {
             </div>
           </section>
 
+          {/* Exotel SMS Settings (Fallback) */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-slate-200/50 dark:border-slate-700/50 pb-2">
+              <MessageSquare className="h-5 w-5 text-blue-500" />
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Exotel SMS Engine (Fallback)</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Exotel Account SID</label>
+                <input 
+                  type="text" 
+                  value={exotelSid}
+                  onChange={e => setExotelSid(e.target.value)}
+                  placeholder="exotel_sid_123"
+                  className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Exotel API Key & Token</label>
+                <div className="relative">
+                  <input 
+                    type={showKeys['exotel'] ? "text" : "password"} 
+                    value={voiceKey}
+                    onChange={e => setVoiceKey(e.target.value)}
+                    placeholder="API_KEY:API_TOKEN"
+                    className="w-full pl-3 pr-10 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 font-mono" 
+                  />
+                  <button type="button" onClick={() => toggleKey('exotel')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                    {showKeys['exotel'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">Format: KEY:TOKEN</p>
+              </div>
+            </div>
+          </section>
+
           {/* WhatsApp Settings */}
           <section className="space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-200/50 dark:border-slate-700/50 pb-2">
