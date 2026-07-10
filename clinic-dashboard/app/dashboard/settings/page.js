@@ -89,14 +89,14 @@ export default function SettingsPage() {
               <input type="text" value={clinic.tagline || ''} onChange={e => setClinic({...clinic, tagline: e.target.value})} style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px'}} />
             </div>
             <div style={{borderTop: '1px solid #e5e7eb', marginTop: '0.5rem', paddingTop: '1rem'}}>
-              <label style={{display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px'}}>Whitelabel Brand Name (Overrides "QueueCare")</label>
+              <label style={{display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px'}}>Whitelabel Brand Name (Overrides "BruvoFlow")</label>
               <input type="text" placeholder="e.g. Apollo Hospitals" value={clinic.whitelabel_name || ''} onChange={e => setClinic({...clinic, whitelabel_name: e.target.value})} style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px'}} />
-              <p style={{fontSize: '12px', color: '#6b7280', marginTop: '4px'}}>Replaces the word "QueueCare" in the Patient Kiosk and SMS/WhatsApp messages.</p>
+              <p style={{fontSize: '12px', color: '#6b7280', marginTop: '4px'}}>Replaces the word "BruvoFlow" in the Patient Kiosk and SMS/WhatsApp messages.</p>
             </div>
             <div style={{marginTop: '0.5rem'}}>
               <label style={{display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500'}}>
                 <input type="checkbox" checked={clinic.show_powered_by ?? true} onChange={e => setClinic({...clinic, show_powered_by: e.target.checked})} style={{width: '16px', height: '16px'}} />
-                Show "Powered by QueueCare" badge
+                Show "Powered by BruvoFlow" badge
               </label>
             </div>
           </div>
