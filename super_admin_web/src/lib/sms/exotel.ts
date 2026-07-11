@@ -7,24 +7,23 @@ export async function sendExotelSMS(toPhoneNumber: string, messageText: string, 
   // 1. Fetch Exotel credentials from the database
   const { data: settings, error } = await supabaseAdmin
     .from('global_settings')
-    .select('exotel_account_sid, voice_api_key')
+    .select('exotel_account_sid, exotel_api_key, exotel_api_token')
     .limit(1)
     .single();
 
-  if (error || !settings?.exotel_account_sid || !settings?.voice_api_key) {
-    console.error("Exotel Configuration Error: Missing SID or API Key");
+  if (
+    error || 
+    !settings?.exotel_account_sid || 
+    !settings?.exotel_api_key || 
+    !settings?.exotel_api_token
+  ) {
+    console.error("Exotel Configuration Error: Missing Account SID, API Key, or API Token");
     return false;
   }
 
   const sid = settings.exotel_account_sid;
-  
-  // Format is API_KEY:API_TOKEN
-  const [apiKey, apiToken] = settings.voice_api_key.split(':');
-  
-  if (!apiKey || !apiToken) {
-    console.error("Exotel Configuration Error: Invalid voice_api_key format. Must be KEY:TOKEN");
-    return false;
-  }
+  const apiKey = settings.exotel_api_key;
+  const apiToken = settings.exotel_api_token;
 
   // Format the phone number to remove '+' if present
   const formattedPhone = toPhoneNumber.replace('+', '');

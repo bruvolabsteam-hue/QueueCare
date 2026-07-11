@@ -1,4 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { supabaseAdmin } from '../supabase-admin';
 
 export async function generatePatientResponse(
@@ -7,25 +6,16 @@ export async function generatePatientResponse(
   clinicData: any
 ) {
   // 1. Fetch the master configuration from the database
-  const { data: settings, error } = await supabaseAdmin
+  const { data: settings } = await supabaseAdmin
     .from('global_settings')
-    .select('anthropic_api_key, claude_model_version')
+    .select('ollama_url')
     .limit(1)
     .single();
 
-  if (error || !settings?.anthropic_api_key) {
-    console.error("AI Configuration Error: Missing Anthropic API Key");
-    return "I am currently unable to check the queue. Please contact the clinic directly.";
-  }
-
-  const anthropic = new Anthropic({
-    apiKey: settings.anthropic_api_key,
-  });
-
-  const modelVersion = settings.claude_model_version || 'claude-3-haiku-20240307';
+  const ollamaUrl = settings?.ollama_url || 'http://127.0.0.1:11434';
 
   // 2. Construct the system prompt using the database information
-  let systemPrompt = `You are an intelligent, polite AI receptionist for ${clinicData?.name || 'BruvoFlow Clinic'}. 
+  let systemPrompt = `You are an intelligent, polite AI receptionist for ${clinicData?.clinic_name || 'BruvoFlow Clinic'}. 
 Your job is to answer the patient's question based strictly on their live queue data below.
 If they ask something unrelated, politely bring the conversation back to their appointment.
 
@@ -46,33 +36,31 @@ INSTRUCTIONS:
 4. Do not use complex formatting.`;
 
   try {
-    // TEMPORARY GROQ OVERRIDE FOR TESTING (Using database key)
-    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const ollamaResponse = await fetch(`${ollamaUrl}/api/chat`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${settings.anthropic_api_key}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama3-8b-8192',
+        model: 'llama3',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
-        temperature: 0.2,
-        max_tokens: 150
+        stream: false
       })
     });
 
-    const data = await groqResponse.json();
-    if (!groqResponse.ok) {
-      console.error("Groq API Error:", data);
+    if (!ollamaResponse.ok) {
+      console.error("Ollama API Error:", ollamaResponse.statusText);
       return "I am experiencing technical difficulties. Please check back later.";
     }
 
-    return data.choices[0].message.content;
+    const data = await ollamaResponse.json();
+    return data.message?.content || "I am experiencing technical difficulties. Please check back later.";
   } catch (err) {
-    console.error("Groq Generation Error:", err);
+    console.error("Ollama Generation Error:", err);
     return "I am experiencing technical difficulties. Please check back later.";
   }
 }
+

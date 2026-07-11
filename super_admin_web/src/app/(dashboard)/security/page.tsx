@@ -18,7 +18,7 @@ export default function SecurityPage() {
     setLoading(true);
     
     // Fetch all clinics
-    const { data: clinics } = await supabase.from('clinics').select('id, name').order('created_at', { ascending: false });
+    const { data: clinics } = await supabase.from('clinics').select('id, clinic_name').order('created_at', { ascending: false });
     
     if (clinics) {
       // Fetch staff for all clinics
@@ -76,7 +76,7 @@ export default function SecurityPage() {
                     <Building2 className="w-5 h-5 text-blue-500" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900 dark:text-white">{clinic.name}</h3>
+                    <h3 className="font-bold text-slate-900 dark:text-white">{clinic.clinic_name}</h3>
                     <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-0.5">
                       <ShieldCheckIcon className="w-3.5 h-3.5" />
                       Data completely isolated via RLS
@@ -123,7 +123,7 @@ export default function SecurityPage() {
                           </td>
                           <td className="px-6 py-4 text-right">
                             <button 
-                              onClick={() => handleRevokeAccess(member.id, member.name, clinic.name)}
+                              onClick={() => handleRevokeAccess(member.id, member.name, clinic.clinic_name)}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20" 
                               title="Revoke Access"
                             >

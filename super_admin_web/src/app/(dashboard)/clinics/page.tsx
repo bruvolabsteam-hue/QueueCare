@@ -56,8 +56,17 @@ export default function ClinicsPage() {
     if (!newClinic.name || !newClinic.email) return;
     
     setIsAdding(true);
+    const slug = newClinic.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "") + "-" + Math.random().toString(36).substring(2, 8);
+
     const { error } = await supabase.from('clinics').insert([
-      { name: newClinic.name, email: newClinic.email, phone: newClinic.phone, is_active: true }
+      { 
+        clinic_name: newClinic.name, 
+        owner_email: newClinic.email, 
+        clinic_slug: slug 
+      }
     ]);
     
     setIsAdding(false);
@@ -131,11 +140,11 @@ export default function ClinicsPage() {
                 clinics.map((clinic) => (
                   <tr key={clinic.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-900 dark:text-white">{clinic.name}</div>
+                      <div className="font-semibold text-slate-900 dark:text-white">{clinic.clinic_name}</div>
                       <div className="text-xs text-slate-500">{clinic.id.substring(0, 8)}...</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-slate-700 dark:text-slate-300">{clinic.email}</div>
+                      <div className="text-slate-700 dark:text-slate-300">{clinic.owner_email}</div>
                       <div className="text-slate-500 text-xs">{clinic.phone}</div>
                     </td>
                     <td className="px-6 py-4">
@@ -161,7 +170,7 @@ export default function ClinicsPage() {
                           <ExternalLink className="h-3.5 w-3.5" />
                           Impersonate
                         </a>
-                        <button onClick={() => handleDelete(clinic.id, clinic.name)} className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20" title="Remove Clinic">
+                        <button onClick={() => handleDelete(clinic.id, clinic.clinic_name)} className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20" title="Remove Clinic">
                           <Trash2 className="h-3.5 w-3.5" />
                           Remove
                         </button>
@@ -207,7 +216,7 @@ export default function ClinicsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
           <div className="glass-panel bg-white/90 dark:bg-slate-900/90 rounded-2xl max-w-md w-full p-6 shadow-2xl zoom-in-95 animate-in">
             <h3 className="text-xl font-bold mb-4">Edit Master Sender Numbers</h3>
-            <p className="text-sm text-slate-500 mb-4">Configure the sender numbers that will be used via the Super Admin API keys for {editModalData.name}.</p>
+            <p className="text-sm text-slate-500 mb-4">Configure the sender numbers that will be used via the Super Admin API keys for {editModalData.clinic_name}.</p>
             <form onSubmit={handleSaveSettings} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">WhatsApp Sender Number</label>

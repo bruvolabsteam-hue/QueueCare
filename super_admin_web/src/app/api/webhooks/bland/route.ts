@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       token_number: patient.token_number,
       currently_serving: patient.clinic?.current_token,
       people_ahead: peopleAhead,
-      clinic_name: patient.clinic?.name,
+      clinic_name: patient.clinic?.clinic_name,
       message: `Your token number is ${patient.token_number}. The clinic is currently serving token ${patient.clinic?.current_token}. There are ${peopleAhead} people ahead of you.`
     });
 
