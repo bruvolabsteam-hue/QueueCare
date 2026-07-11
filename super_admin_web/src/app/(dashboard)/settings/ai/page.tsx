@@ -19,6 +19,7 @@ export default function GlobalAIConfig() {
   const [exotelApiToken, setExotelApiToken] = useState("");
   const [whatsappApiKey, setWhatsappApiKey] = useState("");
   const [supportWhatsappNumber, setSupportWhatsappNumber] = useState("");
+  const [ollamaModel, setOllamaModel] = useState("llama3");
 
   const supabase = createClient();
 
@@ -33,6 +34,7 @@ export default function GlobalAIConfig() {
         setExotelApiToken(data.exotel_api_token || "");
         setWhatsappApiKey(data.whatsapp_api_key || "");
         setSupportWhatsappNumber(data.support_whatsapp_number || "");
+        setOllamaModel(data.ollama_model || "llama3");
       }
       setLoading(false);
     }
@@ -58,6 +60,7 @@ export default function GlobalAIConfig() {
       exotel_api_token: exotelApiToken,
       whatsapp_api_key: whatsappApiKey,
       support_whatsapp_number: supportWhatsappNumber,
+      ollama_model: ollamaModel,
     };
     
     let error;
@@ -107,7 +110,7 @@ export default function GlobalAIConfig() {
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Ollama Engine</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Ollama Local URL / IP Address</label>
                 <input 
                   type="text" 
@@ -116,7 +119,18 @@ export default function GlobalAIConfig() {
                   placeholder="http://127.0.0.1:11434"
                   className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 font-mono" 
                 />
-                <p className="text-xs text-slate-500 mt-1">Direct URL to your local WSL or remote Ollama instance running llama3.</p>
+                <p className="text-xs text-slate-500 mt-1">Direct URL to your local WSL or remote Ollama instance.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Ollama Model</label>
+                <input 
+                  type="text" 
+                  value={ollamaModel}
+                  onChange={e => setOllamaModel(e.target.value)}
+                  placeholder="llama3"
+                  className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 font-mono" 
+                />
+                <p className="text-xs text-slate-500 mt-1">Local model name (e.g., llama3, llama3.1, mistral).</p>
               </div>
             </div>
           </section>

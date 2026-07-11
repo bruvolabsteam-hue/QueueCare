@@ -25,11 +25,12 @@ export async function POST(req: NextRequest) {
 async function handleRequest(req: NextRequest) {
   try {
     const url = new URL(req.url);
+    const origin = url.origin;
     const action = url.searchParams.get('action');
     const simulateDbError = url.searchParams.get('simulate_db_error') === 'true';
 
     if (simulateDbError) {
-      return createExomlResponse('<Play>/api/webhooks/exotel/audio?id=maintenance</Play>\n<Hangup/>');
+      return createExomlResponse(`<Play>${origin}/api/webhooks/exotel/audio?id=maintenance</Play>\n<Hangup/>`);
     }
 
     if (action && action !== 'speech' && action !== 'hangup') {
@@ -64,7 +65,7 @@ async function handleRequest(req: NextRequest) {
     }
 
     if (action === 'hangup') {
-      return createExomlResponse('<Play>/api/webhooks/exotel/audio?id=hangup</Play>\n<Hangup/>');
+      return createExomlResponse(`<Play>${origin}/api/webhooks/exotel/audio?id=hangup</Play>\n<Hangup/>`);
     }
 
     // Query database for patient
@@ -80,30 +81,30 @@ async function handleRequest(req: NextRequest) {
 
     if (error) {
       if (error.code === 'PGRST116') {
-        return createExomlResponse('<Play>/api/webhooks/exotel/audio?id=no-ticket</Play>\n<Hangup/>');
+        return createExomlResponse(`<Play>${origin}/api/webhooks/exotel/audio?id=no-ticket</Play>\n<Hangup/>`);
       }
-      return createExomlResponse('<Play>/api/webhooks/exotel/audio?id=maintenance</Play>\n<Hangup/>');
+      return createExomlResponse(`<Play>${origin}/api/webhooks/exotel/audio?id=maintenance</Play>\n<Hangup/>`);
     }
 
     if (!patient) {
-      return createExomlResponse('<Play>/api/webhooks/exotel/audio?id=no-ticket</Play>\n<Hangup/>');
+      return createExomlResponse(`<Play>${origin}/api/webhooks/exotel/audio?id=no-ticket</Play>\n<Hangup/>`);
     }
 
     // Initial call: no action parameter
     if (!action) {
       return createExomlResponse(
-        '<Gather input="speech" action="/api/webhooks/exotel?action=speech" method="POST" timeout="5">\n' +
-        '  <Play>/api/webhooks/exotel/audio?id=welcome</Play>\n' +
-        '</Gather>'
+        `<Gather input="speech" action="${origin}/api/webhooks/exotel?action=speech" method="POST" timeout="5">\n` +
+        `  <Play>${origin}/api/webhooks/exotel/audio?id=welcome</Play>\n` +
+        `</Gather>`
       );
     }
 
     if (action === 'speech') {
       if (!transcriptionText || transcriptionText.trim() === '') {
         return createExomlResponse(
-          '<Gather input="speech" action="/api/webhooks/exotel?action=speech" method="POST" timeout="5">\n' +
-          '  <Play>/api/webhooks/exotel/audio?id=repeat</Play>\n' +
-          '</Gather>'
+          `<Gather input="speech" action="${origin}/api/webhooks/exotel?action=speech" method="POST" timeout="5">\n` +
+          `  <Play>${origin}/api/webhooks/exotel/audio?id=repeat</Play>\n` +
+          `</Gather>`
         );
       }
 
@@ -119,8 +120,8 @@ async function handleRequest(req: NextRequest) {
       textCache.set(audioId, aiReply);
 
       return createExomlResponse(
-        `<Gather input="speech" action="/api/webhooks/exotel?action=speech" method="POST" timeout="5">\n` +
-        `  <Play>/api/webhooks/exotel/audio?id=${audioId}</Play>\n` +
+        `<Gather input="speech" action="${origin}/api/webhooks/exotel?action=speech" method="POST" timeout="5">\n` +
+        `  <Play>${origin}/api/webhooks/exotel/audio?id=${audioId}</Play>\n` +
         `</Gather>`
       );
     }
@@ -128,6 +129,6 @@ async function handleRequest(req: NextRequest) {
     return new NextResponse('Bad Request', { status: 400 });
   } catch (err) {
     console.error('Webhook execution failed:', err);
-    return createExomlResponse('<Play>/api/webhooks/exotel/audio?id=maintenance</Play>\n<Hangup/>');
+    return createExomlResponse(`<Play>${origin}/api/webhooks/exotel/audio?id=maintenance</Play>\n<Hangup/>`);
   }
 }

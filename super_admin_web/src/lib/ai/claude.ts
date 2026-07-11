@@ -8,11 +8,12 @@ export async function generatePatientResponse(
   // 1. Fetch the master configuration from the database
   const { data: settings } = await supabaseAdmin
     .from('global_settings')
-    .select('ollama_url')
+    .select('ollama_url, ollama_model')
     .limit(1)
     .single();
 
   const ollamaUrl = settings?.ollama_url || 'http://127.0.0.1:11434';
+  const ollamaModel = settings?.ollama_model || 'llama3';
 
   // 2. Construct the system prompt using the database information
   let systemPrompt = `You are an intelligent, polite AI receptionist for ${clinicData?.clinic_name || 'BruvoFlow Clinic'}. 
@@ -42,7 +43,7 @@ INSTRUCTIONS:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama3',
+        model: ollamaModel,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
