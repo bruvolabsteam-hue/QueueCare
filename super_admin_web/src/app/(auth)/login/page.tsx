@@ -72,9 +72,9 @@ export default function Login() {
                   required
                 >
                   <option value="" disabled>Select your name...</option>
-                  <option value="admin1@queuecare.local">Admin 1</option>
-                  <option value="admin2@queuecare.local">Admin 2</option>
-                  <option value="admin3@queuecare.local">Admin 3</option>
+                  <option value="vinyas@queuecare.local">Vinyas</option>
+                  <option value="ullas@queuecare.local">Ullas</option>
+                  <option value="bhagat@queuecare.local">Bhagat</option>
                 </select>
               </div>
             </div>
