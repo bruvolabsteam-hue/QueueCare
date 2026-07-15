@@ -58,9 +58,15 @@ BEGIN
       v_wait_time_mins::TEXT
     );
 
-    -- 6. Enqueue WhatsApp Message
-    INSERT INTO pending_messages (patient_id, clinic_id, phone, message_body, status, service)
-    VALUES (v_patient_id, p_clinic_id, p_phone, v_sms_body, 'pending', 'whatsapp');
+    -- 6. Enqueue Message
+    INSERT INTO public.pending_messages (clinic_id, patient_phone, event_type, message_content, status)
+    VALUES (
+      p_clinic_id, 
+      p_phone, 
+      'token_assigned', 
+      v_sms_body, 
+      'pending'
+    );
 
     RETURN v_new_token;
 END;
