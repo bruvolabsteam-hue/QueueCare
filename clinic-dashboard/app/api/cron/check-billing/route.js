@@ -15,67 +15,83 @@ export async function GET(request) {
     // 2. Fetch the keys from global_settings
     const { data: settings, error: dbError } = await supabase
       .from('global_settings')
-      .select('anthropic_api_key, whatsapp_api_key, support_whatsapp_number')
+      .select('brain_url, brain_model, brain_api_key')
       .limit(1)
       .single();
 
-    if (dbError || !settings || !settings.anthropic_api_key) {
-      return NextResponse.json({ status: 'error', message: 'No Anthropic API key found in vault.' });
+    if (dbError || !settings || !settings.brain_api_key) {
+      return NextResponse.json({ status: 'error', message: 'No Brain API key found in vault.' });
     }
 
-    const anthropicKey = settings.anthropic_api_key;
-    const adminPhone = settings.support_whatsapp_number;
+    const brainUrl = settings.brain_url || 'https://api.groq.com/openai/v1';
+    const brainModel = settings.brain_model || 'llama-3.1-8b-instant';
+    const brainApiKey = settings.brain_api_key;
     
-    // 3. Ping Anthropic API to see if the key has balance remaining
-    // Since Anthropic doesn't have a direct "balance" endpoint, we attempt a tiny 1-token request.
-    // If it returns a 429 quota error, we know the balance is empty.
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+    // 3. Ping Brain API to see if the key has balance remaining
+    const endpoint = brainUrl.endsWith('/') ? `${brainUrl}chat/completions` : `${brainUrl}/chat/completions`;
+    const brainRes = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${brainApiKey}`,
         'content-type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 1,
-        messages: [{ role: 'user', content: 'ping' }]
+        model: brainModel,
+        messages: [{ role: 'user', content: 'ping' }],
+        max_tokens: 1
       })
     });
 
-    const anthropicData = await anthropicRes.json();
+    const brainData = await brainRes.json();
     let isBalanceLow = false;
     let alertMessage = '';
 
-    // Check if Anthropic rejected it due to billing
-    if (!anthropicRes.ok) {
-      if (anthropicData?.error?.type === 'insufficient_quota' || anthropicRes.status === 402 || anthropicRes.status === 429) {
+    // Check if Brain API rejected it due to billing/auth
+    if (!brainRes.ok) {
+      if (brainData?.error?.code === 'insufficient_quota' || brainRes.status === 402 || brainRes.status === 429) {
         isBalanceLow = true;
-        alertMessage = "🚨 *Critical Alert*: Your Claude Haiku API balance has run out or hit its limit! Please refill immediately at console.anthropic.com to prevent the Live Queue from going offline.";
-      } else if (anthropicData?.error?.type === 'authentication_error') {
+        alertMessage = "🚨 *Critical Alert*: Your Groq Brain API balance has run out or hit its limit! Please refill immediately to prevent the Live Queue from going offline.";
+      } else if (brainData?.error?.type === 'authentication_error' || brainRes.status === 401) {
         isBalanceLow = true;
-        alertMessage = "🚨 *Security Alert*: Your Claude Haiku API key in the Super Admin Vault is invalid or was revoked.";
+        alertMessage = "🚨 *Security Alert*: Your Groq Brain API key in the Super Admin Vault is invalid or was revoked.";
       }
     }
 
-    // 4. Send WhatsApp Alert if there is an issue
-    if (isBalanceLow && adminPhone && settings.whatsapp_api_key) {
-      // Assuming a generic WhatsApp Cloud API endpoint (adjust to actual provider later)
-      // We will console.log here and return the payload so we can test it locally
-      console.log(`Sending WhatsApp alert to ${adminPhone}:`, alertMessage);
+    // 4. Queue system alert message if there is an issue
+    if (isBalanceLow) {
+      const { data: platformSettings } = await supabase
+        .from('platform_settings')
+        .select('super_admin_phone')
+        .limit(1)
+        .single();
+
+      const adminPhone = platformSettings?.super_admin_phone;
+
+      if (adminPhone) {
+        // Insert into pending_messages if not already exists to avoid spam
+        const { data: existing } = await supabase
+          .from('pending_messages')
+          .select('id')
+          .eq('patient_phone', adminPhone)
+          .eq('message_content', alertMessage)
+          .eq('status', 'pending')
+          .limit(1);
+
+        if (!existing || existing.length === 0) {
+          await supabase.from('pending_messages').insert({
+            clinic_id: null,
+            patient_phone: adminPhone,
+            event_type: 'system_alert',
+            message_content: alertMessage,
+            status: 'pending'
+          });
+        }
+      }
       
-      /* Example WhatsApp Cloud API Call:
-      await fetch(`https://graph.facebook.com/v17.0/YOUR_PHONE_ID/messages`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${settings.whatsapp_api_key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messaging_product: 'whatsapp', to: adminPhone, text: { body: alertMessage } })
-      });
-      */
-      
-      return NextResponse.json({ status: 'alert_sent', message: alertMessage });
+      return NextResponse.json({ status: 'alert_queued', message: alertMessage });
     }
 
-    return NextResponse.json({ status: 'ok', message: 'API key is healthy and active. No alert needed.' });
+    return NextResponse.json({ status: 'ok', message: 'Brain API key is healthy and active. No alert needed.' });
     
   } catch (err) {
     console.error('Cron job failed:', err);

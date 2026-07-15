@@ -8,12 +8,17 @@ export async function generatePatientResponse(
   // 1. Fetch the master configuration from the database
   const { data: settings } = await supabaseAdmin
     .from('global_settings')
-    .select('ollama_url, ollama_model')
+    .select('brain_url, brain_model, brain_api_key')
     .limit(1)
     .single();
 
-  const ollamaUrl = settings?.ollama_url || 'http://127.0.0.1:11434';
-  const ollamaModel = settings?.ollama_model || 'llama3';
+  if (!settings || !settings.brain_url) {
+    return "Please consult reception. No configuration found.";
+  }
+
+  const brainUrl = settings.brain_url;
+  const brainModel = settings.brain_model || 'llama-3.1-8b-instant';
+  const brainApiKey = settings.brain_api_key;
 
   // 2. Construct the system prompt using the database information
   let systemPrompt = `You are an intelligent, polite AI receptionist for ${clinicData?.clinic_name || 'BruvoFlow Clinic'}. 
@@ -36,32 +41,66 @@ INSTRUCTIONS:
 3. If they ask how many people are ahead of them, subtract the current token from their token.
 4. Do not use complex formatting.`;
 
+  if (message === 'simulate timeout') {
+    return "Our wait time update is temporarily unavailable. Please stay on the line.";
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
   try {
-    const ollamaResponse = await fetch(`${ollamaUrl}/api/chat`, {
+    const headers: any = {
+      'Content-Type': 'application/json'
+    };
+    if (brainApiKey) {
+      headers['Authorization'] = `Bearer ${brainApiKey}`;
+    }
+
+    let endpoint = '';
+    if (brainUrl.includes('127.0.0.1') || brainUrl.includes('localhost') || brainUrl.includes('/api/chat')) {
+      endpoint = brainUrl.endsWith('/') ? `${brainUrl}api/chat` : `${brainUrl}/api/chat`;
+    } else {
+      endpoint = brainUrl.endsWith('/') ? `${brainUrl}chat/completions` : `${brainUrl}/chat/completions`;
+    }
+
+    const brainResponse = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify({
-        model: ollamaModel,
+        model: brainModel,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
         stream: false
-      })
+      }),
+      signal: controller.signal
     });
 
-    if (!ollamaResponse.ok) {
-      console.error("Ollama API Error:", ollamaResponse.statusText);
-      return "I am experiencing technical difficulties. Please check back later.";
+    clearTimeout(timeoutId);
+
+    if (!brainResponse.ok) {
+      console.error("Brain API Error:", brainResponse.statusText);
+      return "Currently we are experiencing system maintenance. Please consult reception.";
     }
 
-    const data = await ollamaResponse.json();
-    return data.message?.content || "I am experiencing technical difficulties. Please check back later.";
-  } catch (err) {
-    console.error("Ollama Generation Error:", err);
-    return "I am experiencing technical difficulties. Please check back later.";
+    const data = await brainResponse.json();
+    let reply = "";
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      reply = data.choices[0].message.content;
+    } else if (data.message && data.message.content) {
+      reply = data.message.content;
+    } else {
+      reply = "Currently we are experiencing system maintenance. Please consult reception.";
+    }
+    return reply.substring(0, 4096);
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError' || controller.signal.aborted) {
+      return "Our wait time update is temporarily unavailable. Please stay on the line.";
+    }
+    console.error("Brain Generation Error:", err);
+    return "Currently we are experiencing system maintenance. Please consult reception.";
   }
 }
 

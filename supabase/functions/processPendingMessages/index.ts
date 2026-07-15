@@ -31,21 +31,69 @@ serve(async (req) => {
       })
     }
 
-    // 2. We no longer fetch clinic API keys. We use the Master Platform Keys.
-    const masterWaKey = Deno.env.get('WHATSAPP_MASTER_KEY') || 'mock-wa-master-key'
-    const masterExotelKey = Deno.env.get('EXOTEL_MASTER_KEY') || 'mock-exotel-master-key'
+    // 2. Fetch TeleCMI Master credentials from environment variables or use fallback mock tokens
+    const masterAppId = Deno.env.get('TELECMI_MASTER_APP_ID') || 'mock-telecmi-app-id'
+    const masterSecretKey = Deno.env.get('TELECMI_MASTER_SECRET_KEY') || 'mock-telecmi-secret-key'
+    const apiBase = Deno.env.get('TELECMI_API_URL') || 'https://api.telecmi.com'
 
     const processMessage = async (msg) => {
       try {
-        // Send actual API request using Master Keys
-        if (msg.event_type.includes('call')) {
-           console.log(`Sending Exotel Call to ${msg.patient_phone} using Master Key: ${masterExotelKey}`)
-           // Log usage for billing and deduct from Master Wallet
-           await supabase.rpc('increment_usage_and_deduct_master', { p_clinic_id: msg.clinic_id, p_service: 'exotel' })
+        const isVoiceCall = msg.event_type.includes('call')
+
+        if (isVoiceCall) {
+          console.log(`Sending TeleCMI Voice Call to ${msg.patient_phone} using Master App ID: ${masterAppId}`)
+          
+          const url = `${apiBase}/v1/call/initiate`
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Basic ${btoa(`${masterAppId}:${masterSecretKey}`)}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              appid: masterAppId,
+              secret: masterSecretKey,
+              to: msg.patient_phone,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error(`TeleCMI Voice initiation failed: ${await response.text()}`)
+          }
+
+          // Log usage for billing and deduct from Master Wallet
+          await supabase.rpc('increment_usage_and_deduct_master', { 
+            p_clinic_id: msg.clinic_id, 
+            p_service: 'telecmi_voice' 
+          })
         } else {
-           console.log(`Sending WhatsApp to ${msg.patient_phone} using Master Key: ${masterWaKey}`)
-           // Log usage for billing and deduct from Master Wallet
-           await supabase.rpc('increment_usage_and_deduct_master', { p_clinic_id: msg.clinic_id, p_service: 'whatsapp' })
+          console.log(`Sending TeleCMI SMS to ${msg.patient_phone} using Master App ID: ${masterAppId}`)
+          
+          const url = `${apiBase}/v1/sms/send`
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Basic ${btoa(`${masterAppId}:${masterSecretKey}`)}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              appid: masterAppId,
+              secret: masterSecretKey,
+              to: msg.patient_phone,
+              text: msg.message_content,
+              message: msg.message_content,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error(`TeleCMI SMS sending failed: ${await response.text()}`)
+          }
+
+          // Log usage for billing and deduct from Master Wallet
+          await supabase.rpc('increment_usage_and_deduct_master', { 
+            p_clinic_id: msg.clinic_id, 
+            p_service: 'telecmi_sms' 
+          })
         }
 
         // Mark as sent
@@ -55,6 +103,8 @@ serve(async (req) => {
           .eq('id', msg.id)
           
       } catch (e) {
+        console.error(`Error processing message ID ${msg.id}:`, e)
+        
         // Handle failure
         let newRetryCount = (msg.retry_count || 0) + 1
         let newStatus = newRetryCount >= 3 ? 'failed' : 'pending'
@@ -68,7 +118,7 @@ serve(async (req) => {
           // Log API failure
           await supabase.from('api_failures').insert({
             clinic_id: msg.clinic_id,
-            service: 'whatsapp',
+            service: msg.event_type.includes('call') ? 'telecmi_voice' : 'telecmi_sms',
             error_message: e.message
           })
         }

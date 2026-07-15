@@ -86,8 +86,7 @@ export default function ClinicsPage() {
     
     setIsEditing(true);
     const { error } = await supabase.from('clinics').update({
-      whatsapp_sender_number: editModalData.whatsapp_sender_number,
-      exotel_caller_id: editModalData.exotel_caller_id
+      telecmi_caller_id: editModalData.telecmi_caller_id
     }).eq('id', editModalData.id);
     
     setIsEditing(false);
@@ -191,11 +190,11 @@ export default function ClinicsPage() {
             <form onSubmit={handleAddClinic} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Clinic Name</label>
-                <input required type="text" value={newClinic.name} onChange={e => setNewClinic({...newClinic, name: e.target.value})} className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500" placeholder="OmniCare Central" />
+                <input required type="text" value={newClinic.name} onChange={e => setNewClinic({...newClinic, name: e.target.value})} className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500" placeholder="BruvoLabs Central" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Email</label>
-                <input required type="email" value={newClinic.email} onChange={e => setNewClinic({...newClinic, email: e.target.value})} className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500" placeholder="contact@omnicare.com" />
+                <input required type="email" value={newClinic.email} onChange={e => setNewClinic({...newClinic, email: e.target.value})} className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500" placeholder="contact@bruvolabs.com" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Phone</label>
@@ -215,16 +214,12 @@ export default function ClinicsPage() {
       {editModalData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
           <div className="glass-panel bg-white/90 dark:bg-slate-900/90 rounded-2xl max-w-md w-full p-6 shadow-2xl zoom-in-95 animate-in">
-            <h3 className="text-xl font-bold mb-4">Edit Master Sender Numbers</h3>
-            <p className="text-sm text-slate-500 mb-4">Configure the sender numbers that will be used via the Super Admin API keys for {editModalData.clinic_name}.</p>
+            <h3 className="text-xl font-bold mb-4">Edit TeleCMI Settings</h3>
+            <p className="text-sm text-slate-500 mb-4">Configure the TeleCMI Caller ID settings for {editModalData.clinic_name}.</p>
             <form onSubmit={handleSaveSettings} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">WhatsApp Sender Number</label>
-                <input type="text" value={editModalData.whatsapp_sender_number || ''} onChange={e => setEditModalData({...editModalData, whatsapp_sender_number: e.target.value})} className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-purple-500" placeholder="+919876543210" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Exotel Caller ID</label>
-                <input type="text" value={editModalData.exotel_caller_id || ''} onChange={e => setEditModalData({...editModalData, exotel_caller_id: e.target.value})} className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-purple-500" placeholder="08047112345" />
+                <label className="block text-sm font-medium mb-1">TeleCMI Caller ID</label>
+                <input type="text" value={editModalData.telecmi_caller_id || ''} onChange={e => setEditModalData({...editModalData, telecmi_caller_id: e.target.value})} className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-purple-500" placeholder="08047112345" />
               </div>
               <div className="flex gap-3 pt-4">
                 <button type="button" onClick={() => setEditModalData(null)} className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancel</button>

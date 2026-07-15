@@ -98,7 +98,7 @@ function getTargetUrl(requestPath) {
     return `http://localhost:${TARGET_PORT_CLINIC}${requestPath}`;
   } else {
     // Real mode
-    if (requestPath.startsWith('/api/settings')) {
+    if (requestPath.startsWith('/api/settings') || requestPath.startsWith('/api/webhooks') || requestPath.startsWith('/api/chat')) {
       return `http://localhost:${TARGET_PORT_SUPERADMIN}${requestPath}`;
     } else {
       return `http://localhost:${TARGET_PORT_CLINIC}${requestPath}`;

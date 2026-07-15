@@ -2,7 +2,7 @@
 CREATE TABLE public.global_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ollama_url TEXT DEFAULT 'http://127.0.0.1:11434',
-  ollama_model TEXT DEFAULT 'llama3',
+  ollama_model TEXT DEFAULT 'qwen2.5',
   elevenlabs_api_key TEXT,
   exotel_account_sid TEXT,
   exotel_api_key TEXT,

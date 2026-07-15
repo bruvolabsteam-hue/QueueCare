@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generatePatientResponse } from '@/lib/ai/claude';
 
-function createExomlResponse(content: string) {
+function createTeleCMIResponse(content: string) {
   return new NextResponse(
     `<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n${content}\n</Response>`,
     {
@@ -25,35 +25,34 @@ export async function POST(req: NextRequest) {
 async function handleRequest(req: NextRequest) {
   try {
     const url = new URL(req.url);
-    const origin = url.origin;
     const action = url.searchParams.get('action');
     const simulateDbError = url.searchParams.get('simulate_db_error') === 'true';
 
     if (simulateDbError) {
-      return createExomlResponse(`<Play>${origin}/api/webhooks/exotel/audio?id=maintenance</Play>\n<Hangup/>`);
+      return createTeleCMIResponse(`  <Play>/api/webhooks/telecmi/audio?id=maintenance</Play>\n  <Hangup/>`);
     }
 
     if (action && action !== 'speech' && action !== 'hangup') {
       return new NextResponse('Bad Request', { status: 400 });
     }
 
-    // Read from and transcription text
-    let from = url.searchParams.get('From') || '';
-    let transcriptionText = url.searchParams.get('TranscriptionText') || '';
+    // Read from and transcription text (supporting different param casing/names)
+    let from = url.searchParams.get('From') || url.searchParams.get('from') || '';
+    let transcriptionText = url.searchParams.get('TranscriptionText') || url.searchParams.get('speech') || url.searchParams.get('text') || '';
 
     if (req.method === 'POST') {
       try {
         const contentType = req.headers.get('content-type') || '';
         if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
           const formData = await req.formData();
-          const bodyFrom = formData.get('From');
+          const bodyFrom = formData.get('From') || formData.get('from');
           if (bodyFrom) from = bodyFrom.toString();
-          const bodyTrans = formData.get('TranscriptionText');
+          const bodyTrans = formData.get('TranscriptionText') || formData.get('speech') || formData.get('text');
           if (bodyTrans) transcriptionText = bodyTrans.toString();
         } else if (contentType.includes('application/json')) {
           const body = await req.json();
-          if (body.From) from = body.From.toString();
-          if (body.TranscriptionText) transcriptionText = body.TranscriptionText.toString();
+          if (body.From || body.from) from = (body.From || body.from).toString();
+          if (body.TranscriptionText || body.speech || body.text) transcriptionText = (body.TranscriptionText || body.speech || body.text).toString();
         }
       } catch (err) {
         console.error('Failed to parse POST body:', err);
@@ -65,7 +64,7 @@ async function handleRequest(req: NextRequest) {
     }
 
     if (action === 'hangup') {
-      return createExomlResponse(`<Play>${origin}/api/webhooks/exotel/audio?id=hangup</Play>\n<Hangup/>`);
+      return createTeleCMIResponse(`  <Play>/api/webhooks/telecmi/audio?id=hangup</Play>\n  <Hangup/>`);
     }
 
     // Query database for patient
@@ -81,34 +80,34 @@ async function handleRequest(req: NextRequest) {
 
     if (error) {
       if (error.code === 'PGRST116') {
-        return createExomlResponse(`<Play>${origin}/api/webhooks/exotel/audio?id=no-ticket</Play>\n<Hangup/>`);
+        return createTeleCMIResponse(`  <Play>/api/webhooks/telecmi/audio?id=no-ticket</Play>\n  <Hangup/>`);
       }
-      return createExomlResponse(`<Play>${origin}/api/webhooks/exotel/audio?id=maintenance</Play>\n<Hangup/>`);
+      return createTeleCMIResponse(`  <Play>/api/webhooks/telecmi/audio?id=maintenance</Play>\n  <Hangup/>`);
     }
 
     if (!patient) {
-      return createExomlResponse(`<Play>${origin}/api/webhooks/exotel/audio?id=no-ticket</Play>\n<Hangup/>`);
+      return createTeleCMIResponse(`  <Play>/api/webhooks/telecmi/audio?id=no-ticket</Play>\n  <Hangup/>`);
     }
 
     // Initial call: no action parameter
     if (!action) {
-      return createExomlResponse(
-        `<Gather input="speech" action="${origin}/api/webhooks/exotel?action=speech" method="POST" timeout="5">\n` +
-        `  <Play>${origin}/api/webhooks/exotel/audio?id=welcome</Play>\n` +
-        `</Gather>`
+      return createTeleCMIResponse(
+        `  <Gather input="speech" action="/api/webhooks/telecmi/voice?action=speech" method="POST" timeout="5">\n` +
+        `    <Play>/api/webhooks/telecmi/audio?id=welcome</Play>\n` +
+        `  </Gather>`
       );
     }
 
     if (action === 'speech') {
       if (!transcriptionText || transcriptionText.trim() === '') {
-        return createExomlResponse(
-          `<Gather input="speech" action="${origin}/api/webhooks/exotel?action=speech" method="POST" timeout="5">\n` +
-          `  <Play>${origin}/api/webhooks/exotel/audio?id=repeat</Play>\n` +
-          `</Gather>`
+        return createTeleCMIResponse(
+          `  <Gather input="speech" action="/api/webhooks/telecmi/voice?action=speech" method="POST" timeout="5">\n` +
+          `    <Play>/api/webhooks/telecmi/audio?id=repeat</Play>\n` +
+          `  </Gather>`
         );
       }
 
-      // Call Claude (Ollama)
+      // Call LLM (Ollama/Groq Brain)
       const aiReply = await generatePatientResponse(
         transcriptionText,
         patient,
@@ -119,16 +118,16 @@ async function handleRequest(req: NextRequest) {
       const textCache = ((global as any).textCache = (global as any).textCache || new Map<string, string>());
       textCache.set(audioId, aiReply);
 
-      return createExomlResponse(
-        `<Gather input="speech" action="${origin}/api/webhooks/exotel?action=speech" method="POST" timeout="5">\n` +
-        `  <Play>${origin}/api/webhooks/exotel/audio?id=${audioId}</Play>\n` +
-        `</Gather>`
+      return createTeleCMIResponse(
+        `  <Gather input="speech" action="/api/webhooks/telecmi/voice?action=speech" method="POST" timeout="5">\n` +
+        `    <Play>/api/webhooks/telecmi/audio?id=${audioId}</Play>\n` +
+        `  </Gather>`
       );
     }
 
     return new NextResponse('Bad Request', { status: 400 });
   } catch (err) {
     console.error('Webhook execution failed:', err);
-    return createExomlResponse(`<Play>${origin}/api/webhooks/exotel/audio?id=maintenance</Play>\n<Hangup/>`);
+    return createTeleCMIResponse(`  <Play>/api/webhooks/telecmi/audio?id=maintenance</Play>\n  <Hangup/>`);
   }
 }

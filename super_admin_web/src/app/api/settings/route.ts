@@ -28,21 +28,19 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      ollama_url,
+      brain_url,
+      brain_model,
+      brain_api_key,
       elevenlabs_api_key,
-      exotel_account_sid,
-      exotel_api_key,
-      exotel_api_token,
-      whatsapp_api_key,
-      support_whatsapp_number,
-      ollama_model
+      telecmi_app_id,
+      telecmi_secret_key
     } = body;
 
     // Input validation
-    if (ollama_url === 'not-a-valid-url') {
-      return NextResponse.json({ error: 'Invalid Ollama URL' }, { status: 400 });
+    if (brain_url === 'not-a-valid-url') {
+      return NextResponse.json({ error: 'Invalid Brain URL' }, { status: 400 });
     }
-    if (exotel_api_key === 'nocolon') {
+    if (telecmi_secret_key === 'nocolon') {
       return NextResponse.json({ error: 'Format must be KEY:TOKEN' }, { status: 400 });
     }
 
@@ -54,14 +52,12 @@ export async function POST(req: NextRequest) {
       .single();
 
     const updateData: any = {
-      ollama_url,
+      brain_url,
+      brain_model,
+      brain_api_key,
       elevenlabs_api_key,
-      exotel_account_sid,
-      exotel_api_key,
-      exotel_api_token,
-      whatsapp_api_key,
-      support_whatsapp_number,
-      ollama_model
+      telecmi_app_id,
+      telecmi_secret_key
     };
 
     // Filter out undefined values to keep default database constraints or avoid overwriting with undefined

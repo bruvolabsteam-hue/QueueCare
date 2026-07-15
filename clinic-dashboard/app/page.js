@@ -111,7 +111,7 @@ export default function Login() {
           </svg>
         </div>
 
-        <h1 className={styles.title}>OmniCare Clinic</h1>
+        <h1 className={styles.title}>BruvoLabs Clinic</h1>
         <p className={styles.subtitle}>
           {isSignUp ? 'Create your Clinic Workspace' : 'Sign in to your Clinic Dashboard'}
         </p>

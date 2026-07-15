@@ -71,43 +71,24 @@ export default function BillingPage() {
       </div>
 
       {/* Balances Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className={`glass-panel p-6 rounded-2xl border ${settings?.master_whatsapp_balance < settings?.alert_threshold ? 'border-rose-300 bg-rose-50/50 dark:border-rose-500/30 dark:bg-rose-500/5' : 'border-slate-200/50 dark:border-slate-800/50'}`}>
+      <div className="grid grid-cols-1 gap-6">
+        <div className={`glass-panel p-6 rounded-2xl border ${settings?.master_telecmi_balance < settings?.alert_threshold ? 'border-rose-300 bg-rose-50/50 dark:border-rose-500/30 dark:bg-rose-500/5' : 'border-slate-200/50 dark:border-slate-800/50'}`}>
           <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 rounded-xl">
-              <MessageCircle className="w-6 h-6" />
+            <div className="p-3 bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 rounded-xl">
+              <Wallet className="w-6 h-6" />
             </div>
-            {settings?.master_whatsapp_balance < settings?.alert_threshold && (
+            {settings?.master_telecmi_balance < settings?.alert_threshold && (
               <span className="flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-100 dark:bg-rose-500/20 px-2.5 py-1 rounded-full">
                 <AlertTriangle className="w-3 h-3" />
                 LOW BALANCE
               </span>
             )}
           </div>
-          <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">WhatsApp Message Tokens</h3>
+          <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">TeleCMI Credits Remaining</h3>
           <div className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
-            {settings?.master_whatsapp_balance?.toLocaleString() || '0'}
+            {settings?.master_telecmi_balance?.toLocaleString() || '0'}
           </div>
-          <p className="text-sm mt-2 text-slate-500">Credits remaining for WhatsApp API.</p>
-        </div>
-
-        <div className={`glass-panel p-6 rounded-2xl border ${settings?.master_exotel_balance < settings?.alert_threshold ? 'border-rose-300 bg-rose-50/50 dark:border-rose-500/30 dark:bg-rose-500/5' : 'border-slate-200/50 dark:border-slate-800/50'}`}>
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 rounded-xl">
-              <PhoneCall className="w-6 h-6" />
-            </div>
-            {settings?.master_exotel_balance < settings?.alert_threshold && (
-              <span className="flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-100 dark:bg-rose-500/20 px-2.5 py-1 rounded-full">
-                <AlertTriangle className="w-3 h-3" />
-                LOW BALANCE
-              </span>
-            )}
-          </div>
-          <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Exotel Voice Tokens</h3>
-          <div className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
-            {settings?.master_exotel_balance?.toLocaleString() || '0'}
-          </div>
-          <p className="text-sm mt-2 text-slate-500">Credits remaining for Voice API.</p>
+          <p className="text-sm mt-2 text-slate-500">Unified credits remaining for TeleCMI Voice and Messaging API.</p>
         </div>
       </div>
 

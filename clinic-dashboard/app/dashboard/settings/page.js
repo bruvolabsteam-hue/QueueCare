@@ -51,8 +51,7 @@ export default function SettingsPage() {
       alert_ahead_count: clinic.alert_ahead_count,
       whitelabel_name: clinic.whitelabel_name,
       show_powered_by: clinic.show_powered_by ?? true,
-      whatsapp_sender_number: clinic.whatsapp_sender_number,
-      exotel_caller_id: clinic.exotel_caller_id
+      telecmi_caller_id: clinic.telecmi_caller_id
     }).eq('id', clinic.id);
 
     setSaving(false);
@@ -103,16 +102,12 @@ export default function SettingsPage() {
         </section>
 
         <section style={{background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'}}>
-          <h2 style={{fontSize: '18px', fontWeight: '600', marginBottom: '1rem'}}>Communication Sender Numbers</h2>
-          <p style={{fontSize: '13px', color: '#6b7280', marginBottom: '1rem'}}>Set your specific numbers for sending WhatsApp updates and automated AI Voice calls.</p>
+          <h2 style={{fontSize: '18px', fontWeight: '600', marginBottom: '1rem'}}>Communication Settings</h2>
+          <p style={{fontSize: '13px', color: '#6b7280', marginBottom: '1rem'}}>Set your TeleCMI Caller ID for patient voice calls and SMS notifications.</p>
           <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
             <div>
-              <label style={{display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px'}}>WhatsApp Sender Number</label>
-              <input type="text" placeholder="+919876543210" value={clinic.whatsapp_sender_number || ''} onChange={e => setClinic({...clinic, whatsapp_sender_number: e.target.value})} style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px'}} />
-            </div>
-            <div>
-              <label style={{display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px'}}>Bland AI Phone Number</label>
-              <input type="text" placeholder="+1 (555) 000-0000" value={clinic.exotel_caller_id || ''} onChange={e => setClinic({...clinic, exotel_caller_id: e.target.value})} style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px'}} />
+              <label style={{display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px'}}>TeleCMI Caller ID</label>
+              <input type="text" placeholder="e.g. 08047112345" value={clinic.telecmi_caller_id || ''} onChange={e => setClinic({...clinic, telecmi_caller_id: e.target.value})} style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px'}} />
             </div>
           </div>
         </section>
@@ -142,8 +137,8 @@ export default function SettingsPage() {
         </section>
 
         <section style={{background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'}}>
-          <h2 style={{fontSize: '18px', fontWeight: '600', marginBottom: '0.5rem'}}>🌐 WhatsApp Language</h2>
-          <p style={{fontSize: '13px', color: '#6b7280', marginBottom: '1rem'}}>All WhatsApp messages will be sent in English + your selected regional language automatically.</p>
+          <h2 style={{fontSize: '18px', fontWeight: '600', marginBottom: '0.5rem'}}>🌐 Patient Language Settings</h2>
+          <p style={{fontSize: '13px', color: '#6b7280', marginBottom: '1rem'}}>Automated TeleCMI Voice and message notifications will be sent in the selected regional language.</p>
           <div>
             <label style={{display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px'}}>Regional Language for Patients</label>
             <select value={clinic.regional_language || 'hi'} onChange={e => setClinic({...clinic, regional_language: e.target.value})} style={{width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '15px'}}>

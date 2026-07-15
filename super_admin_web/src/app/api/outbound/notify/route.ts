@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { sendWhatsAppMessage } from '@/lib/whatsapp/client';
-import { sendExotelSMS } from '@/lib/sms/exotel';
+import { sendTeleCMIMessage } from '@/lib/sms/telecmi';
 
-// POST: Trigger outbound notification (WhatsApp -> SMS fallback)
+// POST: Trigger outbound notification
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -40,32 +39,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid event_type' }, { status: 400 });
     }
 
-    // 3. Attempt to send via WhatsApp
-    console.log(`Attempting to send WhatsApp message to ${patient.phone_number}`);
-    const whatsappSuccess = await sendWhatsAppMessage(patient.phone_number, message);
+    // 3. Send via TeleCMI
+    console.log(`Sending TeleCMI message to ${patient.phone_number}`);
+    const callerId = patient.clinic.telecmi_caller_id;
 
-    if (whatsappSuccess) {
-      return NextResponse.json({ success: true, channel: 'whatsapp', message: 'Delivered via WhatsApp' });
-    }
-
-    // 4. Fallback to Exotel SMS
-    console.log(`WhatsApp failed for ${patient.phone_number}. Falling back to Exotel SMS...`);
-    
-    // Use the clinic's Exotel Caller ID if available, otherwise it will fail in a real scenario
-    const callerId = patient.clinic.exotel_caller_id;
-    
     if (!callerId) {
-      console.error(`Cannot send SMS fallback. No exotel_caller_id configured for clinic ${patient.clinic_id}`);
-      return NextResponse.json({ success: false, error: 'WhatsApp failed and no SMS Caller ID configured.' }, { status: 500 });
+      console.error(`Cannot send SMS. No telecmi_caller_id configured for clinic ${patient.clinic_id}`);
+      return NextResponse.json({ success: false, error: 'No SMS Caller ID configured.' }, { status: 500 });
     }
 
-    const smsSuccess = await sendExotelSMS(patient.phone_number, message, callerId);
+    const success = await sendTeleCMIMessage(patient.phone_number, message, callerId);
 
-    if (smsSuccess) {
-      return NextResponse.json({ success: true, channel: 'sms', message: 'Delivered via SMS Fallback' });
+    if (success) {
+      return NextResponse.json({ success: true, channel: 'sms', message: 'Delivered via TeleCMI' });
     }
 
-    return NextResponse.json({ success: false, error: 'Both WhatsApp and SMS failed.' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'TeleCMI sending failed.' }, { status: 500 });
     
   } catch (error) {
     console.error('Outbound Notify Webhook Error:', error);

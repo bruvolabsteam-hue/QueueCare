@@ -71,7 +71,6 @@ const targetServer = http.createServer((req, res) => {
         body = JSON.parse(rawBody);
       } catch (e) {}
     } else if (rawBody && req.headers['content-type'] && req.headers['content-type'].includes('application/x-www-form-urlencoded')) {
-      // Parse form encoded body
       body = Object.fromEntries(new URLSearchParams(rawBody).entries());
     }
 
@@ -95,14 +94,14 @@ const targetServer = http.createServer((req, res) => {
 
         if (req.method === 'POST') {
           // Input validation
-          if (body.ollama_url === 'not-a-valid-url') {
+          if (body.brain_url === 'not-a-valid-url') {
             res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Invalid Ollama URL' }));
+            res.end(JSON.stringify({ error: 'Invalid Brain URL' }));
             return;
           }
-          if (body.exotel_api_key === 'nocolon') {
+          if (body.telecmi_app_id === null) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Format must be KEY:TOKEN' }));
+            res.end(JSON.stringify({ error: 'telecmi_app_id is required' }));
             return;
           }
 
@@ -116,7 +115,7 @@ const targetServer = http.createServer((req, res) => {
         }
       }
 
-      // 2. Ollama /api/chat Endpoint
+      // 2. Chat/Brain Helper Endpoint (mimicking Ollama call)
       if (path === '/api/chat' && req.method === 'POST') {
         const phone = body.phone_number;
         const msg = body.message;
@@ -134,7 +133,7 @@ const targetServer = http.createServer((req, res) => {
         }
 
         // Fetch patient
-        const patientRes = await requestHelper(`${MOCK_SERVER_URL}/supabase/v1/patients?phone_number=eq.${encodeURIComponent(phone)}&status=eq.waiting`, {
+        const patientRes = await requestHelper(`${MOCK_SERVER_URL}/supabase/v1/patients?select=*,clinic(*)&phone_number=eq.${encodeURIComponent(phone)}&status=eq.waiting`, {
           headers: { 'Accept': 'application/vnd.pgrst.object+json' }
         });
         
@@ -143,26 +142,22 @@ const targetServer = http.createServer((req, res) => {
           patient = JSON.parse(patientRes.body);
         }
 
-        // Get configured Ollama URL
-        const ollamaUrl = settings.ollama_url || 'http://localhost:4000/ollama';
+        const brainUrl = settings.brain_url || 'http://localhost:4000/ollama';
 
-        // Call Ollama
         try {
           if (msg === 'simulate timeout') {
-            // Fast timeout fallback
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ reply: 'Our wait time update is temporarily unavailable. Please stay on the line.' }));
             return;
           }
 
-          const ollamaRes = await requestHelper(`${ollamaUrl}/api/chat`, {
+          const brainRes = await requestHelper(`${brainUrl}/api/chat`, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'x-target-ollama-url': ollamaUrl // Pass this header so mock server captures it
+              'Content-Type': 'application/json'
             }
           }, {
-            model: 'llama3',
+            model: 'llama-3.1-8b-instant',
             messages: [
               {
                 role: 'system',
@@ -172,20 +167,19 @@ const targetServer = http.createServer((req, res) => {
             ]
           });
 
-          if (ollamaRes.statusCode === 500) {
+          if (brainRes.statusCode === 500) {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ reply: 'Currently we are experiencing system maintenance. Please consult reception.' }));
             return;
           }
 
-          const ollamaData = JSON.parse(ollamaRes.body);
-          let reply = ollamaData.message?.content || 'System error';
+          const brainData = JSON.parse(brainRes.body);
+          let reply = brainData.message?.content || 'System error';
           
           if (msg === 'respond with super long string') {
-            reply = 'a'.repeat(5000); // Simulate long response
+            reply = 'a'.repeat(5000);
           }
 
-          // Truncate reply if exceeds WhatsApp limits
           if (reply.length > 4096) {
             reply = reply.substring(0, 4096);
           }
@@ -199,10 +193,10 @@ const targetServer = http.createServer((req, res) => {
         return;
       }
 
-      // 3. Exotel Webhook Endpoint
-      if (path === '/api/webhooks/exotel' && req.method === 'POST') {
-        const phone = body.From || '';
-        const transcript = body.TranscriptionText || '';
+      // 3. TeleCMI Voice Webhook Endpoint
+      if (path === '/api/webhooks/telecmi/voice') {
+        const phone = body.from || body.From || parsedUrl.query.from || parsedUrl.query.From || '';
+        const transcript = body.TranscriptionText || body.speech || body.text || parsedUrl.query.TranscriptionText || parsedUrl.query.speech || parsedUrl.query.text || '';
 
         if (!phone) {
           res.writeHead(400, { 'Content-Type': 'text/plain' });
@@ -210,41 +204,43 @@ const targetServer = http.createServer((req, res) => {
           return;
         }
 
-        if (parsedUrl.query.action === 'invalid') {
+        const action = parsedUrl.query.action || body.action || '';
+
+        if (action && action !== 'speech' && action !== 'hangup') {
           res.writeHead(400, { 'Content-Type': 'text/plain' });
           res.end('Invalid action');
           return;
         }
 
         if (parsedUrl.query.simulate_db_error === 'true') {
-          res.writeHead(200, { 'Content-Type': 'text/xml' });
-          res.end(`<?xml version="1.0" encoding="UTF-8"?><Response><Play>/api/webhooks/exotel/audio?id=maintenance</Play><Hangup/></Response>`);
+          res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' });
+          res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n  <Play>/api/webhooks/telecmi/audio?id=maintenance</Play>\n  <Hangup/>\n</Response>`);
           return;
         }
 
-        if (parsedUrl.query.action === 'hangup') {
-          res.writeHead(200, { 'Content-Type': 'text/xml' });
-          res.end(`<?xml version="1.0" encoding="UTF-8"?><Response><Play>/api/webhooks/exotel/audio?id=hangup</Play><Hangup/></Response>`);
+        if (action === 'hangup') {
+          res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' });
+          res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n  <Play>/api/webhooks/telecmi/audio?id=hangup</Play>\n  <Hangup/>\n</Response>`);
           return;
         }
 
         // Query patient
-        const patientRes = await requestHelper(`${MOCK_SERVER_URL}/supabase/v1/patients?phone_number=eq.${encodeURIComponent(phone)}&status=eq.waiting`, {
+        const searchPhone = phone.startsWith('+') ? phone : `+${phone}`;
+        const patientRes = await requestHelper(`${MOCK_SERVER_URL}/supabase/v1/patients?phone_number=eq.${encodeURIComponent(searchPhone)}&status=eq.waiting`, {
           headers: { 'Accept': 'application/vnd.pgrst.object+json' }
         });
 
         if (patientRes.statusCode !== 200) {
-          // Patient not found in waiting queue
-          res.writeHead(200, { 'Content-Type': 'text/xml' });
-          res.end(`<?xml version="1.0" encoding="UTF-8"?><Response><Play>/api/webhooks/exotel/audio?id=no-ticket</Play><Hangup/></Response>`);
+          res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' });
+          res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n  <Play>/api/webhooks/telecmi/audio?id=no-ticket</Play>\n  <Hangup/>\n</Response>`);
           return;
         }
 
         // If action is speech callback
-        if (parsedUrl.query.action === 'speech') {
+        if (action === 'speech') {
           if (!transcript) {
-            res.writeHead(200, { 'Content-Type': 'text/xml' });
-            res.end(`<?xml version="1.0" encoding="UTF-8"?><Response><Gather input="speech" action="/api/webhooks/exotel?action=speech" method="POST" timeout="5"><Play>/api/webhooks/exotel/audio?id=repeat</Play></Gather></Response>`);
+            res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' });
+            res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n  <Gather input="speech" action="/api/webhooks/telecmi/voice?action=speech" method="POST" timeout="5">\n    <Play>/api/webhooks/telecmi/audio?id=repeat</Play>\n  </Gather>\n</Response>`);
             return;
           }
 
@@ -252,7 +248,7 @@ const targetServer = http.createServer((req, res) => {
           const chatRes = await requestHelper(`http://localhost:${req.socket.localPort}/api/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
-          }, { phone_number: phone, message: transcript });
+          }, { phone_number: searchPhone, message: transcript });
           
           const chatData = JSON.parse(chatRes.body);
           const aiReply = chatData.reply || 'System status normal';
@@ -260,19 +256,19 @@ const targetServer = http.createServer((req, res) => {
           const audioId = `audio-${Date.now()}-${Math.floor(Math.random()*1000)}`;
           textCache[audioId] = aiReply;
 
-          res.writeHead(200, { 'Content-Type': 'text/xml' });
-          res.end(`<?xml version="1.0" encoding="UTF-8"?><Response><Gather input="speech" action="/api/webhooks/exotel?action=speech" method="POST" timeout="5"><Play>/api/webhooks/exotel/audio?id=${audioId}</Play></Gather></Response>`);
+          res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' });
+          res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n  <Gather input="speech" action="/api/webhooks/telecmi/voice?action=speech" method="POST" timeout="5">\n    <Play>/api/webhooks/telecmi/audio?id=${audioId}</Play>\n  </Gather>\n</Response>`);
           return;
         }
 
-        // Welcome / gather
-        res.writeHead(200, { 'Content-Type': 'text/xml' });
-        res.end(`<?xml version="1.0" encoding="UTF-8"?><Response><Gather input="speech" action="/api/webhooks/exotel?action=speech" method="POST" timeout="5"><Play>/api/webhooks/exotel/audio?id=welcome</Play></Gather></Response>`);
+        // Welcome / gather (Initial Call)
+        res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' });
+        res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n  <Gather input="speech" action="/api/webhooks/telecmi/voice?action=speech" method="POST" timeout="5">\n    <Play>/api/webhooks/telecmi/audio?id=welcome</Play>\n  </Gather>\n</Response>`);
         return;
       }
 
-      // 4. ElevenLabs Audio Endpoint
-      if (path === '/api/webhooks/exotel/audio' && req.method === 'GET') {
+      // 4. TeleCMI Audio Endpoint
+      if (path === '/api/webhooks/telecmi/audio' && req.method === 'GET') {
         const id = parsedUrl.query.id;
         const textParam = parsedUrl.query.text || '';
 
@@ -282,14 +278,12 @@ const targetServer = http.createServer((req, res) => {
           return;
         }
 
-        // Static fallbacks
         if (['no-ticket', 'repeat', 'maintenance', 'welcome', 'hangup'].includes(id)) {
           res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
-          res.end(Buffer.alloc(64, 0x55)); // Small dummy audio
+          res.end(Buffer.alloc(64, 0x55));
           return;
         }
 
-        // Cache hit check
         if (audioCache[id]) {
           res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
           res.end(audioCache[id]);
@@ -306,7 +300,6 @@ const targetServer = http.createServer((req, res) => {
 
         const apiKey = settings.elevenlabs_api_key || '';
         if (!apiKey) {
-          // fallback without ElevenLabs
           const fallback = Buffer.alloc(64, 0x77);
           audioCache[id] = fallback;
           res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
@@ -328,7 +321,6 @@ const targetServer = http.createServer((req, res) => {
           res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
           res.end(elRes.rawBody);
         } else {
-          // fallback
           const fallback = Buffer.alloc(64, 0x88);
           audioCache[id] = fallback;
           res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
@@ -337,95 +329,71 @@ const targetServer = http.createServer((req, res) => {
         return;
       }
 
-      // 5. WhatsApp Webhook Endpoints
-      if (path === '/api/webhooks/whatsapp') {
-        if (req.method === 'GET') {
-          const mode = parsedUrl.query['hub.mode'];
-          const token = parsedUrl.query['hub.verify_token'];
-          const challenge = parsedUrl.query['hub.challenge'];
+      // 5. TeleCMI Messaging Webhook Endpoint
+      if (path === '/api/webhooks/telecmi/message') {
+        const from = body.from || body.From || parsedUrl.query.from || parsedUrl.query.From || '';
+        const msg = body.msg || body.message || body.text || parsedUrl.query.msg || parsedUrl.query.message || parsedUrl.query.text || '';
 
-          if (mode === 'subscribe' && token === 'bruvoflow_secure_webhook') {
-            res.writeHead(200, { 'Content-Type': 'text/plain' });
-            res.end(challenge);
-          } else {
-            res.writeHead(403, { 'Content-Type': 'text/plain' });
-            res.end('Forbidden');
-          }
+        if (!from || !msg) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing from or message text' }));
           return;
         }
 
-        if (req.method === 'POST') {
-          // WhatsApp events
-          if (body.object === 'whatsapp_business_account') {
-            const entry = body.entry?.[0];
-            const changes = entry?.changes?.[0];
-            const val = changes?.value;
-            const messages = val?.messages;
+        const searchPhone = from.startsWith('+') ? from : `+${from}`;
 
-            if (messages && messages.length > 0) {
-              const message = messages[0];
-              const fromNumber = message.from;
-              let text = message.text?.body || '';
+        // Query patient
+        const patientRes = await requestHelper(`${MOCK_SERVER_URL}/supabase/v1/patients?phone_number=eq.${encodeURIComponent(searchPhone)}&status=eq.waiting`, {
+          headers: { 'Accept': 'application/vnd.pgrst.object+json' }
+        });
 
-              if (fromNumber) {
-                const searchPhone = fromNumber.startsWith('+') ? fromNumber : `+${fromNumber}`;
-
-                // Query patient
-                const patientRes = await requestHelper(`${MOCK_SERVER_URL}/supabase/v1/patients?phone_number=eq.${encodeURIComponent(searchPhone)}&status=eq.waiting`, {
-                  headers: { 'Accept': 'application/vnd.pgrst.object+json' }
-                });
-
-                // Fetch settings
-                const settingsRes = await requestHelper(`${MOCK_SERVER_URL}/supabase/v1/global_settings`, {
-                  headers: { 'Accept': 'application/vnd.pgrst.object+json' }
-                });
-                const settings = JSON.parse(settingsRes.body);
-                const waKey = settings.whatsapp_api_key || 'mock-whatsapp-key';
-
-                if (patientRes.statusCode !== 200) {
-                  // Send reception fallback
-                  await requestHelper(`${MOCK_SERVER_URL}/whatsapp/v19.0/mock-waba-id/messages`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${waKey}`
-                    }
-                  }, {
-                    messaging_product: "whatsapp",
-                    to: fromNumber,
-                    text: { body: "I'm sorry, I couldn't find an active queue ticket for this phone number. Please check with the clinic reception." }
-                  });
-                } else {
-                  // Trigger chat
-                  const chatRes = await requestHelper(`http://localhost:${req.socket.localPort}/api/chat`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                  }, { phone_number: searchPhone, message: text });
-                  
-                  const chatData = JSON.parse(chatRes.body);
-                  const reply = chatData.reply;
-
-                  // Send message back
-                  await requestHelper(`${MOCK_SERVER_URL}/whatsapp/v19.0/mock-waba-id/messages`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${waKey}`
-                    }
-                  }, {
-                    messaging_product: "whatsapp",
-                    to: fromNumber,
-                    text: { body: reply }
-                  });
-                }
-              }
-            }
-          }
-
-          res.writeHead(200, { 'Content-Type': 'text/plain' });
-          res.end('EVENT_RECEIVED');
+        if (patientRes.statusCode !== 200) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Patient not found or not waiting' }));
           return;
         }
+
+        // Fetch settings
+        const settingsRes = await requestHelper(`${MOCK_SERVER_URL}/supabase/v1/global_settings`, {
+          headers: { 'Accept': 'application/vnd.pgrst.object+json' }
+        });
+        const settings = JSON.parse(settingsRes.body);
+        const appid = settings.telecmi_app_id || 'mock-telecmi-appid';
+        const secret = settings.telecmi_secret_key || 'mock-telecmi-secret';
+
+        // Trigger chat
+        const chatRes = await requestHelper(`http://localhost:${req.socket.localPort}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        }, { phone_number: searchPhone, message: msg });
+        
+        const chatData = JSON.parse(chatRes.body);
+        const reply = chatData.reply;
+
+        // Send SMS back via TeleCMI SMS Mock API
+        const telecmiRes = await requestHelper(`${MOCK_SERVER_URL}/v1/sms/send`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${Buffer.from(`${appid}:${secret}`).toString('base64')}`
+          }
+        }, {
+          appid,
+          secret,
+          to: searchPhone,
+          message: reply,
+          text: reply,
+          sender: "master_sender"
+        });
+
+        if (telecmiRes.statusCode === 200) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, response: reply }));
+        } else {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Failed to send SMS reply via TeleCMI' }));
+        }
+        return;
       }
 
       // Fallback

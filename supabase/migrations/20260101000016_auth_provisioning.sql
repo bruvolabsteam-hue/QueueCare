@@ -8,10 +8,10 @@ DECLARE
   new_clinic_id uuid;
 BEGIN
   -- Check if this is the Super Admin (Bruvo Labs)
-  IF new.email = 'bruvolabs.team@gmail.com' THEN
+  IF new.email = 'bruvolabs.team@gmail.com' OR new.email = 'admin1@queuecare.local' OR new.email = 'admin2@queuecare.local' OR new.email = 'admin3@queuecare.local' THEN
     -- Insert directly into staff as super_admin, no clinic needed
     INSERT INTO public.staff (id, email, name, role, is_active)
-    VALUES (new.id, new.email, 'Bruvo Labs', 'super_admin', true);
+    VALUES (new.id, new.email, 'Super Admin', 'super_admin', true);
   ELSE
     -- 1. Create a new isolated Clinic workspace for this user
     INSERT INTO public.clinics (clinic_name, owner_email, clinic_slug, tagline)

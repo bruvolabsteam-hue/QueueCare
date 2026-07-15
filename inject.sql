@@ -1,0 +1,1 @@
+UPDATE public.global_settings SET ollama_model = 'qwen2.5';

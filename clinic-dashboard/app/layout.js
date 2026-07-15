@@ -2,7 +2,7 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'OmniCare Clinic',
+  title: 'BruvoLabs Clinic',
   description: 'Clinic Management Dashboard',
 };
 

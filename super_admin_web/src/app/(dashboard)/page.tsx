@@ -10,8 +10,7 @@ interface DashboardStats {
   totalClinics: number;
   activePatients: number;
   noShowRate: string;
-  masterWalletWhatsapp: number;
-  masterWalletExotel: number;
+  masterWalletTelecmi: number;
 }
 
 export default function Dashboard() {
@@ -20,8 +19,7 @@ export default function Dashboard() {
     totalClinics: 0,
     activePatients: 0,
     noShowRate: "0%",
-    masterWalletWhatsapp: 0,
-    masterWalletExotel: 0
+    masterWalletTelecmi: 0
   });
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -63,8 +61,7 @@ export default function Dashboard() {
             totalClinics: clinicsCount || 0,
             activePatients: patientsCount || 0,
             noShowRate: `${noShowPercent}%`,
-            masterWalletWhatsapp: platformData?.master_whatsapp_balance || 0,
-            masterWalletExotel: platformData?.master_exotel_balance || 0
+            masterWalletTelecmi: platformData?.master_telecmi_balance || 0
           });
         } catch (error) {
           console.error("Failed to fetch dashboard stats", error);
@@ -138,12 +135,8 @@ export default function Dashboard() {
           <h2 className="text-lg font-semibold">Platform Master Wallet (Overage System)</h2>
           <div className="flex-1 flex flex-col justify-center gap-4">
              <div className="p-4 bg-teal-50 dark:bg-teal-900/20 rounded-xl border border-teal-100 dark:border-teal-800">
-                <h3 className="text-sm font-medium text-teal-600 dark:text-teal-400">WhatsApp Credits Remaining</h3>
-                <div className="text-3xl font-black text-slate-900 dark:text-white mt-1">{stats.masterWalletWhatsapp.toLocaleString()}</div>
-             </div>
-             <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-800">
-                <h3 className="text-sm font-medium text-amber-600 dark:text-amber-400">Exotel Calls Remaining</h3>
-                <div className="text-3xl font-black text-slate-900 dark:text-white mt-1">{stats.masterWalletExotel.toLocaleString()}</div>
+                <h3 className="text-sm font-medium text-teal-600 dark:text-teal-400">TeleCMI Credits Remaining</h3>
+                <div className="text-3xl font-black text-slate-900 dark:text-white mt-1">{stats.masterWalletTelecmi.toLocaleString()}</div>
              </div>
           </div>
         </div>

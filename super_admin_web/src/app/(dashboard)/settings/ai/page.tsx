@@ -12,14 +12,12 @@ export default function GlobalAIConfig() {
   const [message, setMessage] = useState("");
 
   // Form State
-  const [ollamaUrl, setOllamaUrl] = useState("http://127.0.0.1:11434");
+  const [brainUrl, setBrainUrl] = useState("https://api.groq.com/openai/v1");
+  const [brainModel, setBrainModel] = useState("llama-3.1-8b-instant");
+  const [brainApiKey, setBrainApiKey] = useState("");
   const [elevenlabsApiKey, setElevenlabsApiKey] = useState("");
-  const [exotelAccountSid, setExotelAccountSid] = useState("");
-  const [exotelApiKey, setExotelApiKey] = useState("");
-  const [exotelApiToken, setExotelApiToken] = useState("");
-  const [whatsappApiKey, setWhatsappApiKey] = useState("");
-  const [supportWhatsappNumber, setSupportWhatsappNumber] = useState("");
-  const [ollamaModel, setOllamaModel] = useState("llama3");
+  const [telecmiAppId, setTelecmiAppId] = useState("");
+  const [telecmiSecretKey, setTelecmiSecretKey] = useState("");
 
   const supabase = createClient();
 
@@ -27,14 +25,12 @@ export default function GlobalAIConfig() {
     async function loadSettings() {
       const { data } = await supabase.from("global_settings").select("*").limit(1).single();
       if (data) {
-        setOllamaUrl(data.ollama_url || "http://127.0.0.1:11434");
+        setBrainUrl(data.brain_url || "https://api.groq.com/openai/v1");
+        setBrainModel(data.brain_model || "llama-3.1-8b-instant");
+        setBrainApiKey(data.brain_api_key || "");
         setElevenlabsApiKey(data.elevenlabs_api_key || "");
-        setExotelAccountSid(data.exotel_account_sid || "");
-        setExotelApiKey(data.exotel_api_key || "");
-        setExotelApiToken(data.exotel_api_token || "");
-        setWhatsappApiKey(data.whatsapp_api_key || "");
-        setSupportWhatsappNumber(data.support_whatsapp_number || "");
-        setOllamaModel(data.ollama_model || "llama3");
+        setTelecmiAppId(data.telecmi_app_id || "");
+        setTelecmiSecretKey(data.telecmi_secret_key || "");
       }
       setLoading(false);
     }
@@ -53,14 +49,12 @@ export default function GlobalAIConfig() {
     const { data: existingData } = await supabase.from("global_settings").select("id").limit(1).single();
     
     const updateData = {
-      ollama_url: ollamaUrl,
+      brain_url: brainUrl,
+      brain_model: brainModel,
+      brain_api_key: brainApiKey,
       elevenlabs_api_key: elevenlabsApiKey,
-      exotel_account_sid: exotelAccountSid,
-      exotel_api_key: exotelApiKey,
-      exotel_api_token: exotelApiToken,
-      whatsapp_api_key: whatsappApiKey,
-      support_whatsapp_number: supportWhatsappNumber,
-      ollama_model: ollamaModel,
+      telecmi_app_id: telecmiAppId,
+      telecmi_secret_key: telecmiSecretKey,
     };
     
     let error;
@@ -103,34 +97,49 @@ export default function GlobalAIConfig() {
 
         <form onSubmit={handleSave} className="space-y-8">
           
-          {/* Ollama Engine Settings */}
+          {/* Brain Settings */}
           <section className="space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-200/50 dark:border-slate-700/50 pb-2">
               <Bot className="h-5 w-5 text-teal-500" />
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Ollama Engine</h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Brain Settings</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Ollama Local URL / IP Address</label>
+                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Brain API URL Address</label>
                 <input 
                   type="text" 
-                  value={ollamaUrl}
-                  onChange={e => setOllamaUrl(e.target.value)}
-                  placeholder="http://127.0.0.1:11434"
+                  value={brainUrl}
+                  onChange={e => setBrainUrl(e.target.value)}
+                  placeholder="https://api.groq.com/openai/v1"
                   className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 font-mono" 
                 />
-                <p className="text-xs text-slate-500 mt-1">Direct URL to your local WSL or remote Ollama instance.</p>
+                <p className="text-xs text-slate-500 mt-1">Direct URL to your Groq or OpenAI-compatible endpoint.</p>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Ollama Model</label>
+                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Brain Model</label>
                 <input 
                   type="text" 
-                  value={ollamaModel}
-                  onChange={e => setOllamaModel(e.target.value)}
-                  placeholder="llama3"
+                  value={brainModel}
+                  onChange={e => setBrainModel(e.target.value)}
+                  placeholder="llama-3.1-8b-instant"
                   className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 font-mono" 
                 />
-                <p className="text-xs text-slate-500 mt-1">Local model name (e.g., llama3, llama3.1, mistral).</p>
+                <p className="text-xs text-slate-500 mt-1">Model name to use (e.g., llama-3.1-8b-instant).</p>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Brain API Key</label>
+                <div className="relative">
+                  <input 
+                    type={showKeys['brainApiKey'] ? "text" : "password"} 
+                    value={brainApiKey}
+                    onChange={e => setBrainApiKey(e.target.value)}
+                    placeholder="gsk_..."
+                    className="w-full pl-3 pr-10 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 font-mono" 
+                  />
+                  <button type="button" onClick={() => toggleKey('brainApiKey')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                    {showKeys['brainApiKey'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -160,87 +169,37 @@ export default function GlobalAIConfig() {
             </div>
           </section>
 
-          {/* Exotel Credentials Settings */}
+          {/* TeleCMI Credentials */}
           <section className="space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-200/50 dark:border-slate-700/50 pb-2">
               <Phone className="h-5 w-5 text-blue-500" />
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Exotel Credentials</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Exotel Account SID</label>
-                <input 
-                  type="text" 
-                  value={exotelAccountSid}
-                  onChange={e => setExotelAccountSid(e.target.value)}
-                  placeholder="exotel_sid_123"
-                  className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500" 
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Exotel API Key</label>
-                <div className="relative">
-                  <input 
-                    type={showKeys['exotelApiKey'] ? "text" : "password"} 
-                    value={exotelApiKey}
-                    onChange={e => setExotelApiKey(e.target.value)}
-                    placeholder="Enter Exotel API Key"
-                    className="w-full pl-3 pr-10 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 font-mono" 
-                  />
-                  <button type="button" onClick={() => toggleKey('exotelApiKey')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
-                    {showKeys['exotelApiKey'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Exotel API Token</label>
-                <div className="relative">
-                  <input 
-                    type={showKeys['exotelApiToken'] ? "text" : "password"} 
-                    value={exotelApiToken}
-                    onChange={e => setExotelApiToken(e.target.value)}
-                    placeholder="Enter Exotel API Token"
-                    className="w-full pl-3 pr-10 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 font-mono" 
-                  />
-                  <button type="button" onClick={() => toggleKey('exotelApiToken')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
-                    {showKeys['exotelApiToken'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* WhatsApp Settings */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-200/50 dark:border-slate-700/50 pb-2">
-              <MessageSquare className="h-5 w-5 text-emerald-500" />
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">WhatsApp Business API</h2>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">TeleCMI Credentials</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Access Token</label>
-                <div className="relative">
-                  <input 
-                    type={showKeys['whatsapp'] ? "text" : "password"} 
-                    value={whatsappApiKey}
-                    onChange={e => setWhatsappApiKey(e.target.value)}
-                    placeholder="EAAGm0Pxxxxxxxxxxxx"
-                    className="w-full pl-3 pr-10 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 font-mono" 
-                  />
-                  <button type="button" onClick={() => toggleKey('whatsapp')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
-                    {showKeys['whatsapp'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">Global Support Number</label>
+                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">TeleCMI App ID</label>
                 <input 
                   type="text" 
-                  value={supportWhatsappNumber}
-                  onChange={e => setSupportWhatsappNumber(e.target.value)}
-                  placeholder="+919876543210"
-                  className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500" 
+                  value={telecmiAppId}
+                  onChange={e => setTelecmiAppId(e.target.value)}
+                  placeholder="Enter TeleCMI App ID"
+                  className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 font-mono" 
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-slate-700 dark:text-slate-300">TeleCMI Secret Key</label>
+                <div className="relative">
+                  <input 
+                    type={showKeys['telecmiSecretKey'] ? "text" : "password"} 
+                    value={telecmiSecretKey}
+                    onChange={e => setTelecmiSecretKey(e.target.value)}
+                    placeholder="Enter TeleCMI Secret Key"
+                    className="w-full pl-3 pr-10 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 font-mono" 
+                  />
+                  <button type="button" onClick={() => toggleKey('telecmiSecretKey')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                    {showKeys['telecmiSecretKey'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             </div>
           </section>

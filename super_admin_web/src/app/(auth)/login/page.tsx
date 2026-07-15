@@ -43,7 +43,7 @@ export default function Login() {
               <Bot className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">
-              OmniCare Platform
+              BruvoLabs Platform
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Sign in to the Super Admin Dashboard

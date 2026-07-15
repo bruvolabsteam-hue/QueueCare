@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         const { data: clinicData } = await supabaseAdmin
           .from('clinics')
           .select('clinic_name')
-          .eq('exotel_caller_id', to_number)
+          .eq('telecmi_caller_id', to_number)
           .limit(1)
           .single();
         

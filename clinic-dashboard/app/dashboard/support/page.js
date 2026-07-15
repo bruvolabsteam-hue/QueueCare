@@ -25,9 +25,9 @@ export default function SupportPage() {
       }
       
       // Load global support number
-      const { data: globalSettings } = await supabase.from('global_settings').select('support_whatsapp_number').limit(1).single();
-      if (globalSettings) {
-        setSupportNumber(globalSettings.support_whatsapp_number);
+      const { data: platformData } = await supabase.from('platform_settings').select('super_admin_phone').limit(1).single();
+      if (platformData) {
+        setSupportNumber(platformData.super_admin_phone);
       }
       
       setLoading(false);

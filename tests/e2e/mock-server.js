@@ -10,6 +10,7 @@ let state = {
 let captured = {
   whatsapp: [],
   exotel: [],
+  telecmi: [],
   ollama: [],
   elevenlabs: [],
   supabase: []
@@ -19,13 +20,12 @@ function resetState() {
   state.global_settings = [
     {
       id: "d3b07384-d113-4c9f-a89c-499cf5b6ff9a",
-      ollama_url: "http://localhost:4000/ollama",
+      brain_url: "http://localhost:4000/ollama",
+      brain_model: "llama-3.1-8b-instant",
+      brain_api_key: "mock-groq-brain-key",
       elevenlabs_api_key: "mock-elevenlabs-key",
-      exotel_account_sid: "mock-exotel-sid",
-      exotel_api_key: "mock-exotel-key",
-      exotel_api_token: "mock-exotel-token",
-      whatsapp_api_key: "mock-whatsapp-key",
-      support_whatsapp_number: "+919876543210",
+      telecmi_app_id: "mock-telecmi-appid",
+      telecmi_secret_key: "mock-telecmi-secret",
       updated_at: new Date().toISOString()
     }
   ];
@@ -33,7 +33,8 @@ function resetState() {
     {
       id: "c1c07384-d113-4c9f-a89c-499cf5b6ff9a",
       name: "General Clinic",
-      clinic_name: "General Clinic"
+      clinic_name: "General Clinic",
+      telecmi_caller_id: "+919876543210"
     }
   ];
   state.patients = [
@@ -50,6 +51,7 @@ function resetState() {
 
   captured.whatsapp = [];
   captured.exotel = [];
+  captured.telecmi = [];
   captured.ollama = [];
   captured.elevenlabs = [];
   captured.supabase = [];
@@ -140,6 +142,13 @@ const server = http.createServer((req, res) => {
       return;
     }
 
+    if (path === '/mock-inspect/telecmi/last' && req.method === 'GET') {
+      const last = captured.telecmi[captured.telecmi.length - 1] || null;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(last));
+      return;
+    }
+
     if (path === '/mock-inspect/ollama/last' && req.method === 'GET') {
       const last = captured.ollama[captured.ollama.length - 1] || null;
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -212,15 +221,16 @@ const server = http.createServer((req, res) => {
           });
         }
 
-        res.writeHead(200, { 'Content-Type': 'application/json' });
         if (req.headers['accept'] && req.headers['accept'].includes('vnd.pgrst.object')) {
           if (results.length > 0) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(results[0]));
           } else {
             res.writeHead(404, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Patient not found' }));
           }
         } else {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(results));
         }
         return;
@@ -238,6 +248,7 @@ const server = http.createServer((req, res) => {
     // C. Ollama Mock API
     if (path.includes('/ollama/api/chat') || (path.includes('/api/chat') && req.headers['host'] && req.headers['host'].includes('localhost:4000'))) {
       captured.ollama.push({
+        path: path,
         method: req.method,
         headers: req.headers,
         body: body,
@@ -276,6 +287,7 @@ const server = http.createServer((req, res) => {
     // D. ElevenLabs Mock API
     if (path.includes('/v1/text-to-speech') || path.includes('/elevenlabs/')) {
       captured.elevenlabs.push({
+        path: path,
         method: req.method,
         headers: req.headers,
         body: body,
@@ -305,6 +317,7 @@ const server = http.createServer((req, res) => {
     // E. WhatsApp Mock API
     if (path.includes('/messages') && (path.includes('/whatsapp/') || path.includes('/v19.0/'))) {
       captured.whatsapp.push({
+        path: path,
         method: req.method,
         headers: req.headers,
         body: body,
@@ -331,6 +344,7 @@ const server = http.createServer((req, res) => {
     // F. Exotel Mock API
     if (path.includes('/Sms/send.json') || (path.includes('/exotel/') && path.includes('/Sms/'))) {
       captured.exotel.push({
+        path: path,
         method: req.method,
         headers: req.headers,
         body: body,
@@ -344,6 +358,45 @@ const server = http.createServer((req, res) => {
           Status: "Success",
           Sid: "exotel-sms-sid-" + Math.random().toString(36).substring(7)
         }
+      }));
+      return;
+    }
+
+    // G. TeleCMI Mock API
+    if (path.includes('/v1/sms/send') || path.includes('/sms/send')) {
+      captured.telecmi.push({
+        path: path,
+        method: req.method,
+        headers: req.headers,
+        body: body,
+        rawBody: rawBody,
+        timestamp: new Date().toISOString(),
+        type: 'sms'
+      });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        status: "success",
+        msgid: "telecmi-sms-sid-" + Math.random().toString(36).substring(7)
+      }));
+      return;
+    }
+
+    if (path.includes('/v1/call/initiate') || path.includes('/call/initiate')) {
+      captured.telecmi.push({
+        path: path,
+        method: req.method,
+        headers: req.headers,
+        body: body,
+        rawBody: rawBody,
+        timestamp: new Date().toISOString(),
+        type: 'call'
+      });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        status: "success",
+        callid: "telecmi-call-sid-" + Math.random().toString(36).substring(7)
       }));
       return;
     }

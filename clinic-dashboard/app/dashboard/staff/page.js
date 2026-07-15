@@ -13,7 +13,7 @@ export default function StaffPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   
-  const initialFormState = { id: null, name: '', specialization: '', phone: '', whatsapp_number: '', allow_patient_calls: false, role: 'doctor' };
+  const initialFormState = { id: null, name: '', specialization: '', phone: '', allow_patient_calls: false, role: 'doctor' };
   const [formData, setFormData] = useState(initialFormState);
   
   const [isSaving, setIsSaving] = useState(false);
@@ -57,7 +57,6 @@ export default function StaffPage() {
           name: formData.name,
           specialization: formData.specialization,
           phone: formData.phone,
-          whatsapp_number: formData.whatsapp_number,
           allow_patient_calls: formData.allow_patient_calls
         }).eq('id', formData.id);
         if (error) throw error;
@@ -70,7 +69,6 @@ export default function StaffPage() {
           role: formData.role,
           specialization: formData.specialization,
           phone: formData.phone,
-          whatsapp_number: formData.whatsapp_number,
           allow_patient_calls: formData.allow_patient_calls,
           is_active: true
         }]);
@@ -221,10 +219,7 @@ export default function StaffPage() {
                 <p style={{fontSize: '12px', color: '#6b7280', marginTop: '4px'}}>Used for Voice AI transfers.</p>
               </div>
 
-              <div>
-                <label style={{display: 'block', marginBottom: '4px', fontWeight: '500'}}>WhatsApp Number (optional)</label>
-                <input type="text" value={formData.whatsapp_number || ''} onChange={e => setFormData({...formData, whatsapp_number: e.target.value})} placeholder="+91 9876543210" style={{width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px'}} />
-              </div>
+
 
               <div style={{marginTop: '0.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}}>
                 <label style={{display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: '500'}}>

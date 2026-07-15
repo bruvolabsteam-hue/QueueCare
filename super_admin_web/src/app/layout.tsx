@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OmniCare AI | Super Admin",
-  description: "Super Admin Dashboard for OmniCare AI",
+  title: "BruvoLabs AI | Super Admin",
+  description: "Super Admin Dashboard for BruvoLabs AI",
 };
 
 import { AuthProvider } from "@/context/AuthContext";
