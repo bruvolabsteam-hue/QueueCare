@@ -1,0 +1,40 @@
+diff --git a/super_admin_web/src/app/(auth)/login/page.tsx b/super_admin_web/src/app/(auth)/login/page.tsx
+--- a/super_admin_web/src/app/(auth)/login/page.tsx
++++ b/super_admin_web/src/app/(auth)/login/page.tsx
+@@ -43,7 +43,7 @@
+             <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">
+-              OmniCare Platform
++              BruvoLabs Platform
+             </h2>
+             <p className="text-sm text-slate-500 dark:text-slate-400">
+diff --git a/clinic-dashboard/app/page.js b/clinic-dashboard/app/page.js
+--- a/clinic-dashboard/app/page.js
++++ b/clinic-dashboard/app/page.js
+@@ -111,7 +111,7 @@
+         </div>
+ 
+-        <h1 className={styles.title}>OmniCare Clinic</h1>
++        <h1 className={styles.title}>BruvoLabs Clinic</h1>
+         <p className={styles.subtitle}>
+diff --git a/clinic-dashboard/app/layout.js b/clinic-dashboard/app/layout.js
+--- a/clinic-dashboard/app/layout.js
++++ b/clinic-dashboard/app/layout.js
+@@ -2,7 +2,7 @@
+ import './globals.css';
+ 
+ export const metadata = {
+-  title: 'OmniCare Clinic',
++  title: 'BruvoLabs Clinic',
+   description: 'Clinic Management Dashboard',
+ };
+diff --git a/super_admin_web/src/app/layout.tsx b/super_admin_web/src/app/layout.tsx
+--- a/super_admin_web/src/app/layout.tsx
++++ b/super_admin_web/src/app/layout.tsx
+@@ -14,7 +14,7 @@
+ 
+ export const metadata: Metadata = {
+-  title: "OmniCare AI | Super Admin",
+-  description: "Super Admin Dashboard for OmniCare AI",
++  title: "BruvoLabs AI | Super Admin",
++  description: "Super Admin Dashboard for BruvoLabs AI",
+ };
