@@ -54,11 +54,11 @@ ALTER TABLE public.global_settings
   DROP COLUMN IF EXISTS support_whatsapp_number;
 
 ALTER TABLE public.global_settings
-  ADD COLUMN telecmi_app_id TEXT,
-  ADD COLUMN telecmi_secret_key TEXT,
-  ADD COLUMN brain_url TEXT DEFAULT 'https://api.groq.com/openai/v1',
-  ADD COLUMN brain_model TEXT DEFAULT 'llama-3.1-8b-instant',
-  ADD COLUMN brain_api_key TEXT;
+  ADD COLUMN IF NOT EXISTS telecmi_app_id TEXT,
+  ADD COLUMN IF NOT EXISTS telecmi_secret_key TEXT,
+  ADD COLUMN IF NOT EXISTS brain_url TEXT DEFAULT 'https://api.groq.com/openai/v1',
+  ADD COLUMN IF NOT EXISTS brain_model TEXT DEFAULT 'llama-3.1-8b-instant',
+  ADD COLUMN IF NOT EXISTS brain_api_key TEXT;
 
 -- 9. Alter public.clinics table
 ALTER TABLE public.clinics
@@ -67,11 +67,11 @@ ALTER TABLE public.clinics
   DROP COLUMN IF EXISTS whatsapp_signature;
 
 ALTER TABLE public.clinics
-  ADD COLUMN telecmi_caller_id VARCHAR;
+  ADD COLUMN IF NOT EXISTS telecmi_caller_id VARCHAR;
 
 -- 10. Alter public.platform_settings table (Migrate balance credits)
 ALTER TABLE public.platform_settings 
-  ADD COLUMN master_telecmi_balance NUMERIC DEFAULT 0;
+  ADD COLUMN IF NOT EXISTS master_telecmi_balance NUMERIC DEFAULT 0;
 
 UPDATE public.platform_settings 
 SET master_telecmi_balance = COALESCE(master_exotel_balance, 0) + COALESCE(master_whatsapp_balance, 0);
@@ -87,7 +87,7 @@ ALTER TABLE public.staff
 -- 12. Alter public.daily_summaries table
 ALTER TABLE public.daily_summaries
   DROP COLUMN IF EXISTS whatsapp_sent_count,
-  ADD COLUMN telecmi_sent_count INTEGER DEFAULT 0;
+  ADD COLUMN IF NOT EXISTS telecmi_sent_count INTEGER DEFAULT 0;
 
 -- 13. Recreate public.increment_usage_and_deduct_master RPC
 CREATE OR REPLACE FUNCTION public.increment_usage_and_deduct_master(
