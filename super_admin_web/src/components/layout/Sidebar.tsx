@@ -24,10 +24,10 @@ export default function Sidebar() {
       <div className="flex h-16 items-center px-6 border-b border-slate-200/50 dark:border-slate-800/50">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-blue-500 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">O</span>
+            <span className="text-white font-bold text-lg">B</span>
           </div>
           <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-blue-600 dark:from-teal-400 dark:to-blue-400">
-            OmniCare Admin
+            BruvoLabs Admin
           </span>
         </div>
       </div>
@@ -64,7 +64,7 @@ export default function Sidebar() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-medium text-slate-900 dark:text-white">Super Admin</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">admin@omnicare.ai</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">admin@bruvolabs.ai</span>
           </div>
         </div>
       </div>

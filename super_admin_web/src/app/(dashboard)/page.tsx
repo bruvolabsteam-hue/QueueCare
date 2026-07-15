@@ -146,7 +146,7 @@ export default function Dashboard() {
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 p-6 rounded-xl border border-blue-100 dark:border-slate-700 shadow-sm">
               <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Reduce No-Shows by 40%</h3>
               <p className="text-slate-600 dark:text-slate-300">
-                The average clinic using OmniCare sees a <strong className="text-indigo-600 dark:text-indigo-400">40% reduction</strong> in no-shows within the first month.
+                The average clinic using BruvoLabs sees a <strong className="text-indigo-600 dark:text-indigo-400">40% reduction</strong> in no-shows within the first month.
               </p>
               <div className="mt-4 pt-4 border-t border-blue-200/50 dark:border-slate-600/50">
                  <span className="text-sm font-medium text-slate-500">Current Platform No-Show Rate:</span>

@@ -95,7 +95,7 @@ export default function DisplayPage() {
       {/* Header */}
       <header style={{ padding: '2rem 4rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }}>
         <h1 style={{ fontSize: '3rem', fontWeight: 'bold', margin: 0 }}>
-          {clinic?.clinic_name || 'OmniCare Clinic'}
+          {clinic?.clinic_name || 'BruvoLabs Clinic'}
         </h1>
         <div style={{ fontSize: '2rem', opacity: 0.8 }}>
           {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

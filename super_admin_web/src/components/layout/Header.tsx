@@ -55,7 +55,7 @@ export default function Header() {
                 <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium text-slate-800 dark:text-slate-200">New Clinic Registered</p>
-                  <p className="text-xs text-slate-500 mt-1">OmniCare Central just signed up for the Pro plan.</p>
+                  <p className="text-xs text-slate-500 mt-1">BruvoLabs Central just signed up for the Pro plan.</p>
                   <p className="text-xs text-slate-400 mt-1">2 mins ago</p>
                 </div>
               </div>
