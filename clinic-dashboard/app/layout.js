@@ -1,5 +1,6 @@
 /* eslint-disable */
 import './globals.css';
+import SecurityShield from "./components/SecurityShield";
 
 export const metadata = {
   title: 'BruvoLabs Clinic',
@@ -24,6 +25,7 @@ export default function RootLayout({ children }) {
         <meta httpEquiv="Expires" content="0" />
       </head>
       <body>
+        <SecurityShield />
         {children}
       </body>
     </html>
