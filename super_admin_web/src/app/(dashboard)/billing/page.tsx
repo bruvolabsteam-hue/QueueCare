@@ -51,6 +51,7 @@ export default function BillingPage() {
       .update({
         super_admin_phone: settings.super_admin_phone,
         alert_threshold: settings.alert_threshold,
+        elevenlabs_alert_threshold: settings.elevenlabs_alert_threshold,
       })
       .eq('id', settings.id);
       
@@ -157,7 +158,7 @@ export default function BillingPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Low Balance Alert Threshold</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">TeleCMI Low Balance Alert Threshold</label>
             <input 
               type="number" 
               required
@@ -166,7 +167,20 @@ export default function BillingPage() {
               onChange={e => setSettings({...settings, alert_threshold: parseInt(e.target.value)})}
               className="w-full px-4 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500" 
             />
-            <p className="text-xs text-slate-500">When either token balance falls below this number, you will receive an automated WhatsApp/SMS warning.</p>
+            <p className="text-xs text-slate-500">When TeleCMI token balance falls below this number, you will receive an automated WhatsApp warning.</p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">ElevenLabs Character Alert Threshold</label>
+            <input 
+              type="number" 
+              required
+              min="0"
+              value={settings?.elevenlabs_alert_threshold || 80000}
+              onChange={e => setSettings({...settings, elevenlabs_alert_threshold: parseInt(e.target.value)})}
+              className="w-full px-4 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500" 
+            />
+            <p className="text-xs text-slate-500">When ElevenLabs usage exceeds this number of characters, you will receive a WhatsApp warning. Alert sent this month: {settings?.elevenlabs_alert_sent_this_month ? 'Yes' : 'No'}</p>
           </div>
 
           <button 

@@ -66,6 +66,16 @@ export async function GET(req: NextRequest) {
             return fallbackBuffer;
           }
 
+          // Inline low balance check (10% probability to avoid rate limits)
+          if (Math.random() < 0.1) {
+            try {
+              const alertUrl = new URL('/api/cron/elevenlabs-alert', req.url).toString();
+              fetch(alertUrl).catch(e => console.error('Background alert check failed', e));
+            } catch (e) {
+              console.error(e);
+            }
+          }
+
           return Buffer.from(arrayBuffer);
         } catch (err) {
           console.error('Failed to generate ElevenLabs audio:', err);
