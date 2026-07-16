@@ -46,14 +46,14 @@ export default function Login() {
               BruvoLabs Platform
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Sign in to the Super Admin Dashboard
+              Login to the Super Admin Dashboard
             </p>
           </div>
 
           <form className="space-y-5" onSubmit={handleLogin}>
             {error && (
               <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm font-medium">
-                {error}
+                {typeof error === 'object' ? JSON.stringify(error) : error}
               </div>
             )}
             
@@ -68,10 +68,10 @@ export default function Login() {
                 <select
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all text-slate-900 dark:text-white appearance-none cursor-pointer"
+                  className="block w-full pl-10 pr-3 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white/50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all appearance-none"
                   required
                 >
-                  <option value="" disabled>Select your name...</option>
+                  <option value="" disabled>Select your name</option>
                   <option value="vinyas@queuecare.local">Vinyas</option>
                   <option value="ullas@queuecare.local">Ullas</option>
                   <option value="bhagat@queuecare.local">Bhagat</option>
@@ -91,7 +91,7 @@ export default function Login() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all text-slate-900 dark:text-white"
+                  className="block w-full pl-10 pr-3 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white/50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
                   placeholder="••••••••"
                   required
                 />
@@ -101,9 +101,13 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-md text-sm font-semibold text-white bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-400 hover:to-blue-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign in (or create password)"}
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                'Login'
+              )}
             </button>
           </form>
         </div>
