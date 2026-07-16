@@ -54,11 +54,13 @@ export default function DashboardPage() {
         .eq('is_active', true);
 
       let avgWait = 10; // default
+      let isFallbackWaitTime = false;
       if (dailySettings && dailySettings.length > 0) {
         const total = dailySettings.reduce((sum, setting) => sum + (setting.time_per_patient_mins || 0), 0);
         avgWait = Math.round(total / dailySettings.length);
       } else {
         // Fallback to clinic settings
+        isFallbackWaitTime = true;
         const { data: cSettings } = await supabase
           .from('clinics')
           .select('avg_time_per_patient_mins')
@@ -72,6 +74,7 @@ export default function DashboardPage() {
       setStats({
         totalPatientsToday: patientsCount || 0,
         avgWaitTime: avgWait,
+        isFallbackWaitTime: isFallbackWaitTime,
         activeDoctors: doctorsCount || 0,
         recentPatients: (recent || []).slice(0, 5) // top 5
       });
@@ -106,7 +109,7 @@ export default function DashboardPage() {
           </div>
           <div className={styles.statValue}>{stats.avgWaitTime} mins</div>
           <div className={styles.statTrend} style={{color: '#6b7280'}}>
-            Based on today's doctor setup
+            {stats.isFallbackWaitTime ? "Based on global clinic setting" : "Based on today's doctor setup"}
           </div>
         </div>
 
