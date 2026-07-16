@@ -59,21 +59,42 @@ INSTRUCTIONS:
     let endpoint = '';
     if (brainUrl.includes('127.0.0.1') || brainUrl.includes('localhost') || brainUrl.includes('/api/chat')) {
       endpoint = brainUrl.endsWith('/') ? `${brainUrl}api/chat` : `${brainUrl}/api/chat`;
+    } else if (brainUrl.includes('anthropic.com')) {
+      endpoint = brainUrl; // use exactly as provided, usually https://api.anthropic.com/v1/messages
+      headers['x-api-key'] = brainApiKey;
+      headers['anthropic-version'] = '2023-06-01';
+      // Anthropic does not use Bearer in Authorization usually, but we keep it or override
+      delete headers['Authorization'];
     } else {
       endpoint = brainUrl.endsWith('/') ? `${brainUrl}chat/completions` : `${brainUrl}/chat/completions`;
     }
 
-    const brainResponse = await fetch(endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
+    let payload: any = {};
+    if (brainUrl.includes('anthropic.com')) {
+      payload = {
+        model: brainModel,
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [
+          { role: 'user', content: message }
+        ],
+        stream: false
+      };
+    } else {
+      payload = {
         model: brainModel,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
         stream: false
-      }),
+      };
+    }
+
+    const brainResponse = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
       signal: controller.signal
     });
 
@@ -88,6 +109,8 @@ INSTRUCTIONS:
     let reply = "";
     if (data.choices && data.choices[0] && data.choices[0].message) {
       reply = data.choices[0].message.content;
+    } else if (data.content && data.content[0] && data.content[0].text) {
+      reply = data.content[0].text;
     } else if (data.message && data.message.content) {
       reply = data.message.content;
     } else {
