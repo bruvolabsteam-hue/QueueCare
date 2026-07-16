@@ -30,7 +30,6 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-50 dark:bg-slate-900">
       {/* Background Ornaments */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none mix-blend-overlay"></div>
       <div className="absolute -top-[500px] -right-[500px] w-[1000px] h-[1000px] rounded-full bg-teal-500/20 blur-[120px] pointer-events-none"></div>
       <div className="absolute -bottom-[500px] -left-[500px] w-[1000px] h-[1000px] rounded-full bg-blue-500/20 blur-[120px] pointer-events-none"></div>
 
