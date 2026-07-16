@@ -2,11 +2,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wallet, MessageCircle, PhoneCall, Save, AlertTriangle, RefreshCw } from "lucide-react";
+import { Wallet, MessageCircle, PhoneCall, Save, AlertTriangle, RefreshCw, Mic } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
 export default function BillingPage() {
   const [settings, setSettings] = useState<any>(null);
+  const [elevenLabsUsage, setElevenLabsUsage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const supabase = createClient();
@@ -17,15 +18,27 @@ export default function BillingPage() {
 
   const fetchSettings = async () => {
     setLoading(true);
-    const { data } = await supabase.from('platform_settings').select('*').limit(1).single();
     
+    // Fetch TeleCMI Platform Settings
+    const { data } = await supabase.from('platform_settings').select('*').limit(1).single();
     if (!data) {
-      // Initialize if empty
       const { data: newData } = await supabase.from('platform_settings').insert([{}]).select().single();
       setSettings(newData);
     } else {
       setSettings(data);
     }
+
+    // Fetch ElevenLabs Usage from API
+    try {
+      const elRes = await fetch('/api/billing/elevenlabs');
+      if (elRes.ok) {
+        const elData = await elRes.json();
+        setElevenLabsUsage(elData);
+      }
+    } catch (err) {
+      console.error("Failed to load ElevenLabs billing data", err);
+    }
+    
     setLoading(false);
   };
 
@@ -71,11 +84,13 @@ export default function BillingPage() {
       </div>
 
       {/* Balances Overview */}
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* TeleCMI Card */}
         <div className={`glass-panel p-6 rounded-2xl border ${settings?.master_telecmi_balance < settings?.alert_threshold ? 'border-rose-300 bg-rose-50/50 dark:border-rose-500/30 dark:bg-rose-500/5' : 'border-slate-200/50 dark:border-slate-800/50'}`}>
           <div className="flex justify-between items-start mb-4">
             <div className="p-3 bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 rounded-xl">
-              <Wallet className="w-6 h-6" />
+              <PhoneCall className="w-6 h-6" />
             </div>
             {settings?.master_telecmi_balance < settings?.alert_threshold && (
               <span className="flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-100 dark:bg-rose-500/20 px-2.5 py-1 rounded-full">
@@ -89,6 +104,31 @@ export default function BillingPage() {
             {settings?.master_telecmi_balance?.toLocaleString() || '0'}
           </div>
           <p className="text-sm mt-2 text-slate-500">Unified credits remaining for TeleCMI Voice and Messaging API.</p>
+        </div>
+
+        {/* ElevenLabs Card */}
+        <div className="glass-panel p-6 rounded-2xl border border-slate-200/50 dark:border-slate-800/50">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400 rounded-xl">
+              <Mic className="w-6 h-6" />
+            </div>
+            {elevenLabsUsage?.tier && (
+              <span className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-slate-100 dark:bg-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-full uppercase">
+                {elevenLabsUsage.tier} PLAN
+              </span>
+            )}
+          </div>
+          <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">ElevenLabs Character Usage</h3>
+          <div className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
+            {elevenLabsUsage ? (
+              <>
+                {elevenLabsUsage.character_count?.toLocaleString()} <span className="text-lg text-slate-400 font-normal">/ {elevenLabsUsage.character_limit?.toLocaleString()}</span>
+              </>
+            ) : (
+              '--'
+            )}
+          </div>
+          <p className="text-sm mt-2 text-slate-500">Total characters consumed by the AI Text-to-Speech engine this billing cycle.</p>
         </div>
       </div>
 
