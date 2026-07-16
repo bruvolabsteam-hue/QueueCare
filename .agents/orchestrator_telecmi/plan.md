@@ -15,8 +15,8 @@ This document outlines the planning for migrating BruvoFlow's budget AI infrastr
 | M1 | Database Schema Update | Drop `exotel_*` and `whatsapp_*` columns. Add `telecmi_app_id`, `telecmi_secret_key` and `telecmi_caller_id` fields. Add `brain_url`, `brain_model`, and `brain_api_key`. Add unified `master_telecmi_balance` and update billing RPCs. | None | DONE |
 | M2 | Branding Updates | Update login screen text and titles in both `super_admin_web` and `clinic-dashboard` to "BruvoLabs". | None | DONE |
 | M3 | UI Settings Simplification | Update Settings page in `super_admin_web` to expose "Brain" & "TeleCMI" credentials. Update Settings page in `clinic-dashboard` to show TeleCMI fields. | M1 | DONE |
-| M4 | TeleCMI & Brain Code Migration | Replace Ollama client with Groq client in `super_admin_web`. Replace Exotel/WhatsApp webhooks and lib files with TeleCMI Voice/Messaging routes. Update Deno processPendingMessages function. | M1, M3 | IN_PROGRESS |
-| M5 | Test Suite Migration & Verification | Update E2E test runner, mock-server, mock-target, and test suite to use TeleCMI endpoints. Ensure token generation and queue system tests are fully functional. | M4 | PLANNED |
+| M4 | TeleCMI & Brain Code Migration | Replace Ollama client with Groq client in `super_admin_web`. Replace Exotel/WhatsApp webhooks and lib files with TeleCMI Voice/Messaging routes. Update Deno processPendingMessages function. | M1, M3 | DONE |
+| M5 | Test Suite Migration & Verification | Update E2E test runner, mock-server, mock-target, and test suite to use TeleCMI endpoints. Ensure token generation and queue system tests are fully functional. Remediate integrity violations (remove hardcodings, implement real URL/key validation, and real database error propagation via custom client headers). | M4 | IN_PROGRESS |
 | M6 | Deployment & Linking | Verify configuration and connectivity to BruvoLabs GitHub repository and BruvoLabs Supabase cloud account. | M5 | PLANNED |
 
 ## Detailed Action Steps

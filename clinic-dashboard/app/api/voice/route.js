@@ -53,7 +53,7 @@ export async function POST(req) {
       p_clinic_id: clinic_id,
       p_name: patient_name,
       p_phone: caller_phone,
-      p_registration_method: 'voice',
+      p_registration_method: 'ivr',
       p_doctor_id: doctorId
     });
 

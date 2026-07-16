@@ -31,3 +31,14 @@ Ensure that the project is correctly connected to the BruvoLabs GitHub repositor
 2. The database has been reset (`supabase db reset`) to apply this change.
 
 Please take note of this update while finalizing Milestone 5 (E2E Verification) and Milestone 6 (Deployment & Linking).
+
+## Successor Handoff — 2026-07-15T12:45:09+05:30
+
+You are the successor Project Orchestrator for the TeleCMI Migration and Branding Updates.
+Your mission is to continue executing the plan in `.agents/orchestrator_telecmi/plan.md`.
+The previous orchestrator (ID: `bf661c61-26a3-4fbe-a4de-9215852b3ac1`) failed due to credential errors, but the project is partially complete:
+- M1 (Database Schema), M2 (Branding), M3 (Settings UI), and M4 (TeleCMI Webhooks/Code) are completed.
+- M5 (E2E Verification) is currently in-progress.
+- M6 (Deployment & Linking) is pending.
+
+Please read `.agents/orchestrator_telecmi/plan.md`, `.agents/orchestrator_telecmi/BRIEFING.md`, `.agents/orchestrator_telecmi/progress.md` and continue the work. Your working directory is `.agents/orchestrator_telecmi/`. Update progress.md frequently.

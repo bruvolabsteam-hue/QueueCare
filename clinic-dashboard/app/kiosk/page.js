@@ -62,7 +62,7 @@ export default function KioskPage() {
       p_clinic_id: clinicId,
       p_name: name,
       p_phone: phone,
-      p_registration_method: 'walk_in',
+      p_registration_method: 'kiosk',
       p_doctor_id: selectedDoctorId || null
     });
 

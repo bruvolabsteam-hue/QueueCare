@@ -86,7 +86,7 @@ export default function QueueView({ doctorId = 'all', doctors = [], clinicId, st
       p_clinic_id: clinicId,
       p_name: newPatient.name,
       p_phone: newPatient.phone,
-      p_registration_method: 'walk_in',
+      p_registration_method: 'walk-in',
       p_doctor_id: newPatient.doctor_id || null
     });
     
