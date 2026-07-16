@@ -54,6 +54,13 @@ export default function SettingsPage() {
       telecmi_caller_id: clinic.telecmi_caller_id
     }).eq('id', clinic.id);
 
+    // Also update today's daily settings so the change reflects instantly on the Overview page
+    const today = new Date().toISOString().split('T')[0];
+    await supabase.from('doctor_daily_settings')
+      .update({ time_per_patient_mins: clinic.avg_time_per_patient_mins })
+      .eq('clinic_id', clinic.id)
+      .eq('date', today);
+
     setSaving(false);
     if (error) {
       console.error(error);

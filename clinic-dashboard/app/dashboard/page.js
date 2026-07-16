@@ -58,10 +58,14 @@ export default function DashboardPage() {
         const total = dailySettings.reduce((sum, setting) => sum + (setting.time_per_patient_mins || 0), 0);
         avgWait = Math.round(total / dailySettings.length);
       } else {
-        // Fallback to clinic default
-        const { data: clinicData } = await supabase.from('clinics').select('avg_time_per_patient_mins').eq('id', clinicId).single();
-        if (clinicData && clinicData.avg_time_per_patient_mins) {
-          avgWait = clinicData.avg_time_per_patient_mins;
+        // Fallback to clinic settings
+        const { data: cSettings } = await supabase
+          .from('clinics')
+          .select('avg_time_per_patient_mins')
+          .eq('id', clinicId)
+          .single();
+        if (cSettings?.avg_time_per_patient_mins) {
+          avgWait = cSettings.avg_time_per_patient_mins;
         }
       }
 
