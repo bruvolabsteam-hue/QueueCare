@@ -8,6 +8,7 @@ import { createClient } from "@/utils/supabase/client";
 export default function BillingPage() {
   const [settings, setSettings] = useState<any>(null);
   const [elevenLabsUsage, setElevenLabsUsage] = useState<any>(null);
+  const [brainUsage, setBrainUsage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const supabase = createClient();
@@ -37,6 +38,17 @@ export default function BillingPage() {
       }
     } catch (err) {
       console.error("Failed to load ElevenLabs billing data", err);
+    }
+
+    // Fetch AI Brain Usage from API
+    try {
+      const brainRes = await fetch('/api/billing/brain');
+      if (brainRes.ok) {
+        const brainData = await brainRes.json();
+        setBrainUsage(brainData);
+      }
+    } catch (err) {
+      console.error("Failed to load Brain billing data", err);
     }
     
     setLoading(false);
@@ -85,7 +97,7 @@ export default function BillingPage() {
       </div>
 
       {/* Balances Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* TeleCMI Card */}
         <div className={`glass-panel p-6 rounded-2xl border ${settings?.master_telecmi_balance < settings?.alert_threshold ? 'border-rose-300 bg-rose-50/50 dark:border-rose-500/30 dark:bg-rose-500/5' : 'border-slate-200/50 dark:border-slate-800/50'}`}>
@@ -130,6 +142,33 @@ export default function BillingPage() {
             )}
           </div>
           <p className="text-sm mt-2 text-slate-500">Total characters consumed by the AI Text-to-Speech engine this billing cycle.</p>
+        </div>
+
+        {/* AI Brain (Groq/Claude) Card */}
+        <div className="glass-panel p-6 rounded-2xl border border-slate-200/50 dark:border-slate-800/50">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-500/20 dark:text-fuchsia-400 rounded-xl">
+              <MessageCircle className="w-6 h-6" />
+            </div>
+            {brainUsage?.provider && (
+              <span className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-slate-100 dark:bg-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-full uppercase">
+                {brainUsage.provider} AI
+              </span>
+            )}
+          </div>
+          <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">AI Tokens Remaining / Min</h3>
+          <div className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
+            {brainUsage?.tokens_remaining ? (
+              <>
+                {brainUsage.tokens_remaining} <span className="text-lg text-slate-400 font-normal">tokens</span>
+              </>
+            ) : (
+              '--'
+            )}
+          </div>
+          <p className="text-sm mt-2 text-slate-500">
+            Real-time API rate limit available right now. {brainUsage?.requests_remaining ? `(${brainUsage.requests_remaining} requests/min remaining)` : ''}
+          </p>
         </div>
       </div>
 
