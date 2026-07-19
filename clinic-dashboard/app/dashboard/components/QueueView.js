@@ -24,15 +24,9 @@ function DoctorQueuePanel({ doctor, clinicId, staffId, isOffline, doctorStartTim
         .from('patients')
         .select('*')
         .eq('clinic_id', clinicId)
+        .eq('doctor_id', doctor.id)
         .gte('created_at', startOfDay)
         .order('queue_position', { ascending: true });
-
-      // If a doctor is assigned, filter by that doctor
-      if (doctor.id !== 'generic') {
-        query.eq('doctor_id', doctor.id);
-      } else {
-        query.is('doctor_id', null);
-      }
 
       const { data: patientsData } = await query;
       setPatients(patientsData || []);

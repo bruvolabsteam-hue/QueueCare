@@ -14,7 +14,13 @@ function formatTime(timeStr) {
 }
 
 function isDoctorOffline(settings) {
-  if (!settings || !settings.is_active) return true;
+  // No daily setup at all = offline
+  if (!settings) return true;
+  // Receptionist manually marked doctor as not available
+  if (!settings.is_active) return true;
+  // If no start/end time set, treat as offline
+  if (!settings.start_time || !settings.end_time) return true;
+  // Check if current time is within the doctor's working window
   const now = new Date();
   const today = now.toISOString().split('T')[0];
   const startMs = new Date(`${today}T${settings.start_time}`).getTime();
@@ -47,35 +53,30 @@ export default function LiveQueuePage() {
 
       const today = new Date().toISOString().split('T')[0];
 
-      // Fetch all active doctors
-      const { data: doctorsData } = await supabase
-        .from('staff')
-        .select('id, name')
+      // KEY FIX: Only fetch doctors who have set up their daily schedule today
+      // (i.e., have a doctor_daily_settings row for today).
+      // This prevents showing empty panels for doctors who haven't configured today.
+      const { data: allDailySettings } = await supabase
+        .from('doctor_daily_settings')
+        .select('*, doctor:doctor_id(id, name)')
         .eq('clinic_id', staffData.clinic_id)
-        .eq('role', 'doctor')
-        .eq('is_active', true);
+        .eq('date', today);
 
-      if (!doctorsData || doctorsData.length === 0) {
+      if (!allDailySettings || allDailySettings.length === 0) {
         setDoctorPanels([]);
         setLoading(false);
         return;
       }
 
-      // Fetch today's settings for each doctor
-      const { data: allDailySettings } = await supabase
-        .from('doctor_daily_settings')
-        .select('*')
-        .eq('clinic_id', staffData.clinic_id)
-        .eq('date', today);
-
-      const panels = doctorsData.map(doc => {
-        const settings = (allDailySettings || []).find(s => s.doctor_id === doc.id) || null;
+      const panels = allDailySettings.map(settings => {
+        const doc = settings.doctor;
         const offline = isDoctorOffline(settings);
-        const startTime = settings ? formatTime(settings.start_time) : null;
-        const endTime = settings ? formatTime(settings.end_time) : null;
-        const timeRange = (startTime && endTime) ? `${startTime} – ${endTime}` : 'No schedule set today';
+        const startTime = settings.start_time ? formatTime(settings.start_time) : null;
+        const endTime = settings.end_time ? formatTime(settings.end_time) : null;
+        const timeRange = (startTime && endTime) ? `${startTime} – ${endTime}` : 'No time set';
         return {
-          ...doc,
+          id: doc.id,
+          name: doc.name,
           settings,
           isOffline: offline,
           startTime,
@@ -83,7 +84,7 @@ export default function LiveQueuePage() {
         };
       });
 
-      // Sort: online doctors first
+      // Sort: online doctors first, then offline (marked unavailable)
       panels.sort((a, b) => (a.isOffline ? 1 : 0) - (b.isOffline ? 1 : 0));
       setDoctorPanels(panels);
       setLoading(false);
@@ -92,33 +93,43 @@ export default function LiveQueuePage() {
   }, []);
 
   if (loading) return <div style={{ padding: '2rem' }}>Loading Live Queue...</div>;
-
   if (!clinicId) return <div style={{ padding: '2rem' }}>Could not load clinic data.</div>;
 
   if (doctorPanels.length === 0) {
     return (
       <div style={{ padding: '2rem' }}>
-        <h2 style={{ fontWeight: 'bold', fontSize: '20px', marginBottom: '1rem' }}>Live Queue</h2>
+        <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#111827', marginBottom: '1rem' }}>Live Queue</h1>
         <div style={{ padding: '3rem', textAlign: 'center', background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', color: '#6b7280' }}>
           <div style={{ fontSize: '48px', marginBottom: '1rem' }}>🏥</div>
-          <div style={{ fontWeight: '600', fontSize: '16px' }}>No active doctors found.</div>
-          <div style={{ fontSize: '14px', marginTop: '0.5rem' }}>Please add doctors in Settings, then set up their daily schedule in the Setup page.</div>
+          <div style={{ fontWeight: '600', fontSize: '16px' }}>No doctors have set up their schedule today.</div>
+          <div style={{ fontSize: '14px', marginTop: '0.5rem' }}>Go to the <strong>Setup</strong> page to configure doctors for today's session.</div>
         </div>
       </div>
     );
   }
 
-  // Determine grid column count: 1 doctor = full width, 2 = 2 col, 3+ = 3 col
+  // Grid: 1 panel = full width, 2 = 2 cols, 3+ = 3 cols (max)
+  const onlineCount = doctorPanels.filter(d => !d.isOffline).length;
   const cols = doctorPanels.length === 1 ? 1 : doctorPanels.length === 2 ? 2 : 3;
 
   return (
     <div style={{ padding: '2rem' }}>
       {/* Header */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#111827', margin: 0 }}>Live Queue</h1>
-        <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px', marginBottom: 0 }}>
-          {doctorPanels.filter(d => !d.isOffline).length} of {doctorPanels.length} doctor(s) currently active
-        </p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+        <div>
+          <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#111827', margin: 0 }}>Live Queue</h1>
+          <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px', marginBottom: 0 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '8px', height: '8px', background: '#10b981', borderRadius: '50%', display: 'inline-block' }}></span>
+              {onlineCount} active
+            </span>
+            <span style={{ margin: '0 8px', color: '#d1d5db' }}>|</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '8px', height: '8px', background: '#f59e0b', borderRadius: '50%', display: 'inline-block' }}></span>
+              {doctorPanels.length - onlineCount} offline
+            </span>
+          </p>
+        </div>
       </div>
 
       {/* Doctor Grid */}
