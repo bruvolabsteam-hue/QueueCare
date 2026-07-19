@@ -39,9 +39,8 @@ function DoctorQueuePanel({ doctor, clinicId, staffId, isOffline, doctorStartTim
     const channel = supabase.channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'patients', filter: `clinic_id=eq.${clinicId}` }, (payload) => {
         const p = payload.new;
-        // Only update if this patient belongs to this doctor's panel
-        const belongsHere = doctor.id === 'generic' ? !p.doctor_id : p.doctor_id === doctor.id;
-        if (!belongsHere) return;
+        // Only update if this patient belongs to this specific doctor's panel
+        if (p.doctor_id !== doctor.id) return;
 
         if (payload.eventType === 'INSERT') {
           setPatients(prev => [...prev, p].sort((a, b) => a.queue_position - b.queue_position));
@@ -140,13 +139,15 @@ function DoctorQueuePanel({ doctor, clinicId, staffId, isOffline, doctorStartTim
           <>
             <div style={{ fontSize: '56px', fontWeight: '900', color: '#2563eb', lineHeight: 1 }}>{currentPatient.token_number}</div>
             <div style={{ fontSize: '18px', fontWeight: '600', marginTop: '0.5rem', color: '#111827' }}>{currentPatient.name}</div>
-            {!isOffline && (
-              <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-                <button onClick={() => updateStatus(currentPatient.id, 'done')} style={{ flex: 1, padding: '10px', background: '#10b981', color: 'white', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>
-                  ✓ Done
-                </button>
-              </div>
-            )}
+            <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={() => { if (!isOffline) updateStatus(currentPatient.id, 'done'); }}
+                disabled={isOffline}
+                style={{ flex: 1, padding: '10px', background: isOffline ? '#d1d5db' : '#10b981', color: isOffline ? '#9ca3af' : 'white', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: isOffline ? 'not-allowed' : 'pointer', fontSize: '13px' }}
+              >
+                {isOffline ? '🔒 Locked' : '✓ Done'}
+              </button>
+            </div>
           </>
         ) : (
           <div style={{ padding: '1.5rem 0', color: '#9ca3af', fontSize: '14px' }}>No patient currently called.</div>
