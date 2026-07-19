@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/check-billing",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/session-end-notify",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
