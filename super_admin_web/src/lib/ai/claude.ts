@@ -8,17 +8,44 @@ export async function generatePatientResponse(
   // 1. Fetch the master configuration from the database
   const { data: settings } = await supabaseAdmin
     .from('global_settings')
-    .select('brain_url, brain_model, brain_api_key')
+    .select('brain_url, brain_model, brain_api_key, groq_url, groq_model, groq_api_key, claude_url, claude_model, claude_api_key, active_brain_provider')
     .limit(1)
     .single();
 
-  if (!settings || !settings.brain_url) {
+  if (!settings) {
     return "Please consult reception. No configuration found.";
   }
 
-  const brainUrl = settings.brain_url;
-  const brainModel = settings.brain_model || 'llama-3.1-8b-instant';
-  const brainApiKey = settings.brain_api_key;
+  let brainUrl = settings.brain_url;
+  let brainModel = settings.brain_model || 'llama-3.1-8b-instant';
+  let brainApiKey = settings.brain_api_key;
+
+  if (settings.active_brain_provider === 'groq') {
+    brainUrl = settings.groq_url || brainUrl;
+    brainModel = settings.groq_model || brainModel;
+    brainApiKey = settings.groq_api_key || brainApiKey;
+  } else if (settings.active_brain_provider === 'claude') {
+    brainUrl = settings.claude_url || brainUrl;
+    brainModel = settings.claude_model || brainModel;
+    brainApiKey = settings.claude_api_key || brainApiKey;
+  }
+
+  if (!brainUrl) {
+    return "Please consult reception. No AI provider URL configured.";
+  }
+
+  // 1.5 Calculate current serving token for the same doctor
+  const { data: currentPatient } = await supabaseAdmin
+    .from('patients')
+    .select('token_number')
+    .eq('clinic_id', patientData.clinic_id)
+    .eq('doctor_id', patientData.doctor_id)
+    .eq('status', 'called')
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .single();
+    
+  const currentToken = currentPatient ? currentPatient.token_number : 'Unknown';
 
   // 2. Construct the system prompt using the database information
   let systemPrompt = `You are an intelligent, polite AI receptionist for ${clinicData?.clinic_name || 'BruvoFlow Clinic'}. 
@@ -32,14 +59,15 @@ PATIENT DATA:
 - Expected Time: ${patientData?.expected_time || 'Unknown'}
 
 CLINIC DATA:
-- Currently Serving Token: ${clinicData?.current_token || 'Unknown'}
+- Currently Serving Token: ${currentToken}
 - Clinic Address: ${clinicData?.address || 'Unknown'}
 
 INSTRUCTIONS:
-1. Be extremely concise (1-2 sentences maximum, this is a WhatsApp message).
+1. Be extremely concise (1-2 sentences maximum, this is a WhatsApp/Voice message).
 2. Answer the user's question accurately based ONLY on the data above.
 3. If they ask how many people are ahead of them, subtract the current token from their token.
-4. Do not use complex formatting.`;
+4. Auto-detect the language the patient is speaking/typing and reply in the EXACT SAME language. If you cannot detect the language, you MUST reply in the default regional language: "${clinicData?.regional_language || 'English'}".
+5. Do not use complex formatting like bold, italics, or markdown. Output plain text only.`;
 
   if (message === 'simulate timeout') {
     return "Our wait time update is temporarily unavailable. Please stay on the line.";

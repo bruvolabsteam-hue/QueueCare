@@ -43,6 +43,13 @@ export async function GET(request) {
       return NextResponse.json({ message: 'No sessions ended in the last 5 minutes. Nothing to notify.' });
     }
 
+    // Fetch global settings for TeleCMI API credentials
+    const { data: globalSettings } = await supabase
+      .from('global_settings')
+      .select('telecmi_app_id, telecmi_secret_key')
+      .limit(1)
+      .single();
+
     let totalNotified = 0;
     const results = [];
 
@@ -72,25 +79,33 @@ export async function GET(request) {
             // We send a custom direct message instead of going through the generic notify endpoint
             // because we need a custom message for session-end
             if (patient.phone) {
-              // Fetch the clinic's TeleCMI caller ID
+              // Fetch the clinic's TeleCMI caller ID (now whatsapp_sender_number)
               const { data: clinic } = await supabase
                 .from('clinics')
-                .select('telecmi_caller_id, telecmi_api_key, telecmi_secret')
+                .select('whatsapp_sender_number')
                 .eq('id', clinicId)
                 .single();
 
-              if (clinic?.telecmi_caller_id) {
+              if (clinic?.whatsapp_sender_number && globalSettings?.telecmi_app_id && globalSettings?.telecmi_secret_key) {
                 // Call TeleCMI SMS API directly
                 const telecmiPayload = {
-                  app_id: clinic.telecmi_caller_id,
-                  secret: clinic.telecmi_secret || '',
+                  appid: globalSettings.telecmi_app_id,
+                  secret: globalSettings.telecmi_secret_key,
                   to: patient.phone,
                   message: sessionEndMsg,
+                  text: sessionEndMsg,
+                  sender: clinic.whatsapp_sender_number
                 };
 
-                await fetch('https://rest.telecmi.com/v2/send', {
+                const authString = Buffer.from(`${globalSettings.telecmi_app_id}:${globalSettings.telecmi_secret_key}`).toString('base64');
+                const apiBase = process.env.TELECMI_API_URL || 'https://api.telecmi.com';
+
+                await fetch(`${apiBase}/v1/sms/send`, {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Basic ${authString}`
+                  },
                   body: JSON.stringify(telecmiPayload),
                 }).catch(e => console.error('TeleCMI send error:', e));
 

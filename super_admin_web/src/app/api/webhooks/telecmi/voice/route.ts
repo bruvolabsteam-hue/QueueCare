@@ -72,7 +72,7 @@ async function handleRequest(req: NextRequest) {
     const { data: patient, error } = await supabaseAdmin
       .from('patients')
       .select('*, clinic:clinics(*)')
-      .eq('phone_number', searchPhone)
+      .eq('phone', searchPhone)
       .eq('status', 'waiting')
       .order('created_at', { ascending: false })
       .limit(1)

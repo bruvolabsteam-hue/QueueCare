@@ -12,15 +12,13 @@ export async function GET(req: NextRequest) {
 
     const fallbackBuffer = Buffer.alloc(64, 0);
 
-    // Static fallbacks
-    if (['no-ticket', 'repeat', 'maintenance', 'welcome', 'hangup'].includes(id)) {
-      return new NextResponse(fallbackBuffer, {
-        status: 200,
-        headers: {
-          'Content-Type': 'audio/mpeg',
-        },
-      });
-    }
+    const STATIC_FALLBACKS: Record<string, string> = {
+      'no-ticket': 'We could not find an active appointment for your phone number. Please contact reception.',
+      'repeat': 'I am sorry, I did not catch that. Please repeat.',
+      'maintenance': 'Our wait time system is temporarily under maintenance. Please hold the line or call reception.',
+      'welcome': 'Welcome. How can I help you regarding your appointment today?',
+      'hangup': 'Thank you for calling. Goodbye.'
+    };
 
     const audioCache = ((global as any).audioCache = (global as any).audioCache || new Map<string, Buffer | Promise<Buffer>>());
     let audioDataOrPromise = audioCache.get(id);
@@ -28,10 +26,15 @@ export async function GET(req: NextRequest) {
     if (!audioDataOrPromise) {
       const promise = (async () => {
         try {
-          const textCache = ((global as any).textCache = (global as any).textCache || new Map<string, string>());
-          let text = textCache.get(id);
-          if (!text) {
-            text = url.searchParams.get('text') || 'System status normal';
+          let text = '';
+          if (STATIC_FALLBACKS[id]) {
+            text = STATIC_FALLBACKS[id];
+          } else {
+            const textCache = ((global as any).textCache = (global as any).textCache || new Map<string, string>());
+            text = textCache.get(id);
+            if (!text) {
+              text = url.searchParams.get('text') || 'System status normal';
+            }
           }
 
           // Get ElevenLabs API key from the database
@@ -51,7 +54,7 @@ export async function GET(req: NextRequest) {
             },
             body: JSON.stringify({
               text: text,
-              model_id: 'eleven_monolingual_v1',
+              model_id: 'eleven_multilingual_v2',
             }),
           });
 
