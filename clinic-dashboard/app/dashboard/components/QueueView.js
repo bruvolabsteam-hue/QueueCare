@@ -75,6 +75,23 @@ function DoctorQueuePanel({ doctor, clinicId, staffId, isOffline, doctorStartTim
     return () => clearInterval(interval);
   }, [patients, doctor]);
 
+  const [autoCalledId, setAutoCalledId] = useState(null);
+
+  useEffect(() => {
+    if (progress >= 100 && !isOffline) {
+      const currentPatient = patients.find(p => p.status === 'called');
+      if (currentPatient && currentPatient.id !== autoCalledId) {
+        setAutoCalledId(currentPatient.id);
+        updateStatus(currentPatient.id, 'done');
+        
+        const waitingPatients = patients.filter(p => p.status === 'waiting');
+        if (waitingPatients.length > 0) {
+          updateStatus(waitingPatients[0].id, 'called');
+        }
+      }
+    }
+  }, [progress, isOffline, patients, autoCalledId]);
+
   const updateStatus = async (id, status, is_no_show = false) => {
     const payload = { status, is_no_show };
     if (status === 'called') {
