@@ -30,8 +30,7 @@ BEGIN
       new_clinic_id,
       new.email,
       split_part(new.email, '@', 1), -- Use the first part of email as default name
-      'clinic_admin',
-      true
+      'clinic_admin'
     );
   END IF;
 
