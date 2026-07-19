@@ -12,6 +12,7 @@ function DoctorQueuePanel({ doctor, clinicId, staffId, isOffline, doctorStartTim
   const [showAddModal, setShowAddModal] = useState(false);
   const [newPatient, setNewPatient] = useState({ name: '', phone: '' });
   const [isAdding, setIsAdding] = useState(false);
+  const [progress, setProgress] = useState(0);
   const supabase = createClient();
 
   useEffect(() => {
@@ -53,8 +54,33 @@ function DoctorQueuePanel({ doctor, clinicId, staffId, isOffline, doctorStartTim
     return () => supabase.removeChannel(channel);
   }, [clinicId, doctor.id]);
 
+  useEffect(() => {
+    const currentPatient = patients.find(p => p.status === 'called');
+    if (!currentPatient || !currentPatient.called_at) {
+      setProgress(0);
+      return;
+    }
+
+    const avgMins = doctor?.settings?.time_per_patient_mins || 10;
+    const extraMins = currentPatient.extra_time_mins || 0;
+    const totalMs = (avgMins + extraMins) * 60000;
+    const startMs = new Date(currentPatient.called_at).getTime();
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startMs;
+      const pct = Math.min(100, Math.max(0, (elapsed / totalMs) * 100));
+      setProgress(pct);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [patients, doctor]);
+
   const updateStatus = async (id, status, is_no_show = false) => {
-    await supabase.from('patients').update({ status, is_no_show }).eq('id', id);
+    const payload = { status, is_no_show };
+    if (status === 'called') {
+      payload.called_at = new Date().toISOString();
+    }
+    await supabase.from('patients').update(payload).eq('id', id);
     if (status === 'called') {
       const superAdminUrl = process.env.NEXT_PUBLIC_SUPER_ADMIN_URL || 'http://localhost:3000';
       fetch(`${superAdminUrl}/api/outbound/notify`, {
@@ -63,6 +89,11 @@ function DoctorQueuePanel({ doctor, clinicId, staffId, isOffline, doctorStartTim
         body: JSON.stringify({ patient_id: id, event_type: 'queue_alert' })
       }).catch(() => {});
     }
+  };
+
+  const addExtraTime = async (id, currentExtra, addMins) => {
+    const newExtra = (currentExtra || 0) + addMins;
+    await supabase.from('patients').update({ extra_time_mins: newExtra }).eq('id', id);
   };
 
   const handleAddPatient = async (e) => {
@@ -143,10 +174,34 @@ function DoctorQueuePanel({ doctor, clinicId, staffId, isOffline, doctorStartTim
               <button
                 onClick={() => { if (!isOffline) updateStatus(currentPatient.id, 'done'); }}
                 disabled={isOffline}
-                style={{ flex: 1, padding: '10px', background: isOffline ? '#d1d5db' : '#10b981', color: isOffline ? '#9ca3af' : 'white', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: isOffline ? 'not-allowed' : 'pointer', fontSize: '13px' }}
+                style={{ flex: 1, position: 'relative', overflow: 'hidden', padding: '10px', background: isOffline ? '#d1d5db' : '#d1fae5', color: isOffline ? '#9ca3af' : '#065f46', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: isOffline ? 'not-allowed' : 'pointer', fontSize: '13px' }}
               >
-                {isOffline ? '🔒 Locked' : '✓ Done'}
+                {!isOffline && (
+                  <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${progress}%`, background: progress >= 100 ? '#ef4444' : '#10b981', transition: 'width 1s linear, background 0.3s' }} />
+                )}
+                <span style={{ position: 'relative', zIndex: 1, color: isOffline ? 'inherit' : (progress >= 100 ? 'white' : (progress > 50 ? 'white' : '#065f46')) }}>
+                  {isOffline ? '🔒 Locked' : '✓ Done'}
+                </span>
               </button>
+              
+              {!isOffline && (
+                <>
+                  <button 
+                    onClick={() => addExtraTime(currentPatient.id, currentPatient.extra_time_mins, 2)}
+                    style={{ padding: '0 10px', background: '#f3f4f6', color: '#4b5563', borderRadius: '8px', border: 'none', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}
+                    title="Add 2 mins"
+                  >
+                    +2m
+                  </button>
+                  <button 
+                    onClick={() => addExtraTime(currentPatient.id, currentPatient.extra_time_mins, 5)}
+                    style={{ padding: '0 10px', background: '#f3f4f6', color: '#4b5563', borderRadius: '8px', border: 'none', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}
+                    title="Add 5 mins"
+                  >
+                    +5m
+                  </button>
+                </>
+              )}
             </div>
           </>
         ) : (
