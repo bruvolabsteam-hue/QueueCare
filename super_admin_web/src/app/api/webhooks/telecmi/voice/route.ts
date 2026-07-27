@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { generatePatientResponse } from '@/lib/ai/claude';
 
-function createTeleCMIResponse(content: string) {
-  return new NextResponse(
-    `<?xml version="1.0" encoding="UTF-8"?>\n<Response>\n${content}\n</Response>`,
-    {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/xml; charset=utf-8',
-      },
-    }
-  );
+// ============================================================================
+// TELECMI PIOPIY VOICE WEBHOOK (PCMO JSON FORMAT)
+// ============================================================================
+// TeleCMI uses PCMO (PIOPIY Call Management Objects) - JSON arrays, NOT XML.
+// When a call comes in, TeleCMI POSTs to this URL with { from, to, cmiuuid }.
+// We respond with a JSON array of actions like [{ action: "speak", text: "..." }].
+// ============================================================================
+
+function createPCMOResponse(actions: any[]) {
+  return NextResponse.json(actions, {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
 
 export async function GET(req: NextRequest) {
@@ -24,110 +26,175 @@ export async function POST(req: NextRequest) {
 
 async function handleRequest(req: NextRequest) {
   try {
+    // 1. Extract caller info from TeleCMI's POST body
+    //    TeleCMI sends: { from: "919100000000", to: "4471000000", cmiuuid: "...", time: ... }
+    let from = '';
+    let to = '';
+
+    // Try query params first (for GET requests or testing)
     const url = new URL(req.url);
-    const action = url.searchParams.get('action');
-    const simulateDbError = url.searchParams.get('simulate_db_error') === 'true';
+    from = url.searchParams.get('from') || url.searchParams.get('From') || '';
+    to = url.searchParams.get('to') || url.searchParams.get('To') || '';
 
-    if (simulateDbError) {
-      return createTeleCMIResponse(`  <Play>/api/webhooks/telecmi/audio?id=maintenance</Play>\n  <Hangup/>`);
-    }
-
-    if (action && action !== 'speech' && action !== 'hangup') {
-      return new NextResponse('Bad Request', { status: 400 });
-    }
-
-    // Read from and transcription text (supporting different param casing/names)
-    let from = url.searchParams.get('From') || url.searchParams.get('from') || '';
-    let transcriptionText = url.searchParams.get('TranscriptionText') || url.searchParams.get('speech') || url.searchParams.get('text') || '';
-
+    // Then try POST body (TeleCMI sends JSON)
     if (req.method === 'POST') {
       try {
         const contentType = req.headers.get('content-type') || '';
-        if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
-          const formData = await req.formData();
-          const bodyFrom = formData.get('From') || formData.get('from');
-          if (bodyFrom) from = bodyFrom.toString();
-          const bodyTrans = formData.get('TranscriptionText') || formData.get('speech') || formData.get('text');
-          if (bodyTrans) transcriptionText = bodyTrans.toString();
-        } else if (contentType.includes('application/json')) {
+        if (contentType.includes('application/json')) {
           const body = await req.json();
-          if (body.From || body.from) from = (body.From || body.from).toString();
-          if (body.TranscriptionText || body.speech || body.text) transcriptionText = (body.TranscriptionText || body.speech || body.text).toString();
+          console.log('TeleCMI webhook received:', JSON.stringify(body));
+          if (body.from) from = body.from.toString();
+          if (body.to) to = body.to.toString();
+        } else if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+          const formData = await req.formData();
+          const bodyFrom = formData.get('from') || formData.get('From');
+          if (bodyFrom) from = bodyFrom.toString();
+          const bodyTo = formData.get('to') || formData.get('To');
+          if (bodyTo) to = bodyTo.toString();
+        } else {
+          // Try JSON parsing anyway (TeleCMI may not set content-type)
+          try {
+            const body = await req.json();
+            console.log('TeleCMI webhook received (no content-type):', JSON.stringify(body));
+            if (body.from) from = body.from.toString();
+            if (body.to) to = body.to.toString();
+          } catch { /* ignore */ }
         }
       } catch (err) {
         console.error('Failed to parse POST body:', err);
       }
     }
 
+    console.log(`Voice webhook called. From: ${from}, To: ${to}`);
+
+    // 2. If no caller number, return a generic greeting
     if (!from) {
-      return new NextResponse('Bad Request', { status: 400 });
+      return createPCMOResponse([
+        { action: "speak", text: "Welcome to QueueCare. We could not identify your phone number. Please contact reception directly." },
+        { action: "hangup" }
+      ]);
     }
 
-    if (action === 'hangup') {
-      return createTeleCMIResponse(`  <Play>/api/webhooks/telecmi/audio?id=hangup</Play>\n  <Hangup/>`);
+    // 3. Normalize the phone number for database lookup
+    //    TeleCMI sends numbers like "919100000000" (no + prefix)
+    let searchPhone = from;
+    if (!searchPhone.startsWith('+')) {
+      searchPhone = `+${searchPhone}`;
     }
 
-    // Query database for patient
-    const searchPhone = from.startsWith('+') ? from : `+${from}`;
-    const { data: patient, error } = await supabaseAdmin
-      .from('patients')
-      .select('*, clinic:clinics(*)')
-      .eq('phone', searchPhone)
-      .eq('status', 'waiting')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    // Also try with +91 prefix if the number looks like an Indian number without country code
+    const phoneVariants = [searchPhone];
+    if (from.length === 10) {
+      phoneVariants.push(`+91${from}`);
+    }
+    if (from.startsWith('91') && from.length === 12) {
+      phoneVariants.push(`+${from}`);
+    }
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return createTeleCMIResponse(`  <Play>/api/webhooks/telecmi/audio?id=no-ticket</Play>\n  <Hangup/>`);
+    // 4. Query database for the patient
+    let patient = null;
+    for (const phone of phoneVariants) {
+      const { data, error } = await supabaseAdmin
+        .from('patients')
+        .select('*, clinic:clinics(*)')
+        .eq('phone', phone)
+        .eq('status', 'waiting')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (data && !error) {
+        patient = data;
+        break;
       }
-      return createTeleCMIResponse(`  <Play>/api/webhooks/telecmi/audio?id=maintenance</Play>\n  <Hangup/>`);
     }
 
+    // 5. If no patient found, inform the caller
     if (!patient) {
-      return createTeleCMIResponse(`  <Play>/api/webhooks/telecmi/audio?id=no-ticket</Play>\n  <Hangup/>`);
+      return createPCMOResponse([
+        {
+          action: "speak",
+          text: "Welcome to QueueCare. We could not find an active appointment linked to your phone number. Please check with the reception desk. Thank you for calling."
+        },
+        { action: "hangup" }
+      ]);
     }
 
-    // Initial call: no action parameter
-    if (!action) {
-      return createTeleCMIResponse(
-        `  <Gather input="speech" action="/api/webhooks/telecmi/voice?action=speech" method="POST" timeout="5">\n` +
-        `    <Play>/api/webhooks/telecmi/audio?id=welcome</Play>\n` +
-        `  </Gather>`
-      );
-    }
+    // 6. Calculate queue position
+    const clinicName = patient.clinic?.clinic_name || 'the clinic';
+    const patientName = patient.patient_name || patient.name || 'Patient';
+    const tokenNumber = patient.token_number || 'Unknown';
 
-    if (action === 'speech') {
-      if (!transcriptionText || transcriptionText.trim() === '') {
-        return createTeleCMIResponse(
-          `  <Gather input="speech" action="/api/webhooks/telecmi/voice?action=speech" method="POST" timeout="5">\n` +
-          `    <Play>/api/webhooks/telecmi/audio?id=repeat</Play>\n` +
-          `  </Gather>`
-        );
+    // Find who is currently being served by the same doctor
+    let currentToken = 'Unknown';
+    let patientsAhead = 0;
+    try {
+      const { data: currentPatient } = await supabaseAdmin
+        .from('patients')
+        .select('token_number')
+        .eq('clinic_id', patient.clinic_id)
+        .eq('doctor_id', patient.doctor_id)
+        .eq('status', 'called')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (currentPatient) {
+        currentToken = currentPatient.token_number;
+        patientsAhead = Math.max(0, tokenNumber - currentPatient.token_number - 1);
       }
 
-      // Call LLM (Ollama/Groq Brain)
-      const aiReply = await generatePatientResponse(
-        transcriptionText,
-        patient,
-        patient.clinic
-      );
+      // Also count waiting patients ahead
+      const { count } = await supabaseAdmin
+        .from('patients')
+        .select('*', { count: 'exact', head: true })
+        .eq('clinic_id', patient.clinic_id)
+        .eq('doctor_id', patient.doctor_id)
+        .eq('status', 'waiting')
+        .lt('token_number', tokenNumber);
 
-      const audioId = `audio-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
-      const textCache = ((global as any).textCache = (global as any).textCache || new Map<string, string>());
-      textCache.set(audioId, aiReply);
-
-      return createTeleCMIResponse(
-        `  <Gather input="speech" action="/api/webhooks/telecmi/voice?action=speech" method="POST" timeout="5">\n` +
-        `    <Play>/api/webhooks/telecmi/audio?id=${audioId}</Play>\n` +
-        `  </Gather>`
-      );
+      if (count !== null && count !== undefined) {
+        patientsAhead = count;
+      }
+    } catch (e) {
+      console.error('Error fetching current token:', e);
     }
 
-    return new NextResponse('Bad Request', { status: 400 });
+    // 7. Calculate estimated wait time
+    const avgTime = patient.clinic?.avg_time_per_patient_mins || 5;
+    const estimatedWaitMins = patientsAhead * avgTime;
+
+    // 8. Build the response message
+    let message = `Hello ${patientName}. Welcome to ${clinicName}. `;
+    message += `Your token number is ${tokenNumber}. `;
+
+    if (currentToken !== 'Unknown') {
+      message += `The doctor is currently seeing token number ${currentToken}. `;
+    }
+
+    if (patientsAhead === 0) {
+      message += `You are next in line! Please be ready. `;
+    } else if (patientsAhead === 1) {
+      message += `There is 1 patient ahead of you. Your estimated wait time is about ${avgTime} minutes. `;
+    } else {
+      message += `There are ${patientsAhead} patients ahead of you. Your estimated wait time is about ${estimatedWaitMins} minutes. `;
+    }
+
+    message += `Thank you for calling. Have a great day!`;
+
+    console.log(`Responding to ${from}: ${message}`);
+
+    // 9. Return PCMO JSON response
+    return createPCMOResponse([
+      { action: "speak", text: message },
+      { action: "hangup" }
+    ]);
+
   } catch (err) {
     console.error('Webhook execution failed:', err);
-    return createTeleCMIResponse(`  <Play>/api/webhooks/telecmi/audio?id=maintenance</Play>\n  <Hangup/>`);
+    return createPCMOResponse([
+      { action: "speak", text: "We are experiencing a temporary issue. Please try calling again or contact reception directly." },
+      { action: "hangup" }
+    ]);
   }
 }
