@@ -36,29 +36,52 @@ async function handleRequest(req: NextRequest) {
     from = url.searchParams.get('from') || url.searchParams.get('From') || '';
     to = url.searchParams.get('to') || url.searchParams.get('To') || '';
 
-    // Then try POST body (TeleCMI sends JSON)
+    // Then try POST body
     if (req.method === 'POST') {
       try {
+        // Read raw body text first for debugging
+        const rawBody = await req.text();
         const contentType = req.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const body = await req.json();
-          console.log('TeleCMI webhook received:', JSON.stringify(body));
-          if (body.from) from = body.from.toString();
-          if (body.to) to = body.to.toString();
-        } else if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
-          const formData = await req.formData();
-          const bodyFrom = formData.get('from') || formData.get('From');
-          if (bodyFrom) from = bodyFrom.toString();
-          const bodyTo = formData.get('to') || formData.get('To');
-          if (bodyTo) to = bodyTo.toString();
-        } else {
-          // Try JSON parsing anyway (TeleCMI may not set content-type)
+        console.log('TeleCMI Content-Type:', contentType);
+        console.log('TeleCMI Raw Body:', rawBody);
+
+        // Try to parse the body
+        let parsed = false;
+
+        // Attempt 1: Try JSON parsing
+        if (!parsed) {
           try {
-            const body = await req.json();
-            console.log('TeleCMI webhook received (no content-type):', JSON.stringify(body));
-            if (body.from) from = body.from.toString();
-            if (body.to) to = body.to.toString();
-          } catch { /* ignore */ }
+            const body = JSON.parse(rawBody);
+            console.log('Parsed as JSON:', JSON.stringify(body));
+            // TeleCMI uses "caller_id" for the caller's number
+            from = (body.caller_id || body.from || body.From || body.cid || '').toString();
+            to = (body.to || body.To || body.did || '').toString();
+            parsed = true;
+          } catch { /* not JSON */ }
+        }
+
+        // Attempt 2: Try URL-encoded form data
+        if (!parsed && rawBody.includes('=')) {
+          try {
+            const params = new URLSearchParams(rawBody);
+            const formFrom = params.get('caller_id') || params.get('from') || params.get('From') || params.get('cid') || '';
+            const formTo = params.get('to') || params.get('To') || '';
+            if (formFrom) {
+              from = formFrom;
+              to = formTo;
+              parsed = true;
+              console.log('Parsed as form-encoded');
+            }
+          } catch { /* not form-encoded */ }
+        }
+
+        // Attempt 3: Try to extract numbers from raw text using regex
+        if (!parsed && rawBody) {
+          const callerMatch = rawBody.match(/caller_id[=:]["']?(\d+)/i);
+          const fromMatch = rawBody.match(/from[=:]["']?(\d+)/i);
+          if (callerMatch) from = callerMatch[1];
+          else if (fromMatch) from = fromMatch[1];
+          console.log('Parsed with regex fallback');
         }
       } catch (err) {
         console.error('Failed to parse POST body:', err);
