@@ -1,7 +1,7 @@
 import os
 import uvicorn
 import logging
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from supabase import create_client, Client
@@ -75,7 +75,7 @@ async def check_availability(request: Request):
 # BOOK APPOINTMENT
 # ──────────────────────────────────────────────
 @app.post("/book_appointment")
-async def book_appointment(request: Request):
+async def book_appointment(request: Request, background_tasks: BackgroundTasks):
     """Book a queue ticket/appointment for the patient."""
     try:
         data = await request.json()
@@ -139,10 +139,10 @@ async def book_appointment(request: Request):
         token = rpc_res.data
         logger.info(f"✅ Token generated: {token} for {patient_name} ({phone})")
 
-        # --- SEND SMS AND WHATSAPP (placeholder for now) ---
+        # --- SEND SMS AND WHATSAPP (offloaded to background task for instant call reply) ---
         msg = f"Hello {patient_name}, your appointment is confirmed! Your token number is {token}. Estimated turn: {est_time_str}."
-        await send_sms(phone, msg)
-        await send_whatsapp(phone, msg)
+        background_tasks.add_task(send_sms, phone, msg)
+        background_tasks.add_task(send_whatsapp, phone, msg)
 
         return {"message": f"Appointment booked successfully! The token number is {token} and their estimated turn is at {est_time_str}. Tell the patient their token number is {token} and their estimated time is {est_time_str}."}
 
