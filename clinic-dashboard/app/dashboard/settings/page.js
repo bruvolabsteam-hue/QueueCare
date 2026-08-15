@@ -6,6 +6,7 @@ import styles from '../dashboard.module.css';
 
 export default function SettingsPage() {
   const [clinic, setClinic] = useState(null);
+  const [doctorPhone, setDoctorPhone] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
@@ -29,6 +30,17 @@ export default function SettingsPage() {
           .eq('id', staffData.clinic_id)
           .single();
         setClinic(clinicData);
+
+        // Fetch Doctor Phone
+        const { data: docData } = await supabase
+          .from('staff')
+          .select('phone')
+          .eq('clinic_id', staffData.clinic_id)
+          .eq('role', 'doctor')
+          .limit(1);
+        if (docData && docData.length > 0) {
+          setDoctorPhone(docData[0].phone || '');
+        }
       }
       setLoading(false);
     }
@@ -53,6 +65,31 @@ export default function SettingsPage() {
       show_powered_by: clinic.show_powered_by ?? true,
       telecmi_caller_id: clinic.telecmi_caller_id
     }).eq('id', clinic.id);
+
+    // Update or insert Doctor Phone
+    const { data: existingDoc } = await supabase
+      .from('staff')
+      .select('id')
+      .eq('clinic_id', clinic.id)
+      .eq('role', 'doctor')
+      .limit(1);
+
+    if (existingDoc && existingDoc.length > 0) {
+      await supabase
+        .from('staff')
+        .update({ phone: doctorPhone })
+        .eq('id', existingDoc[0].id);
+    } else if (doctorPhone) {
+      await supabase
+        .from('staff')
+        .insert({
+          clinic_id: clinic.id,
+          name: 'Doctor',
+          role: 'doctor',
+          phone: doctorPhone,
+          email: `doctor-${clinic.id.slice(0,8)}@queuecare.local`
+        });
+    }
 
     // Also update today's daily settings so the change reflects instantly on the Overview page
     const today = new Date().toISOString().split('T')[0];
@@ -159,6 +196,15 @@ export default function SettingsPage() {
               <option value="gu">🇮🇳 Gujarati (ગુજરાતી)</option>
               <option value="pa">🇮🇳 Punjabi (ਪੰਜਾਬੀ)</option>
             </select>
+          </div>
+        </section>
+
+        <section style={{background: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'}}>
+          <h2 style={{fontSize: '18px', fontWeight: '600', marginBottom: '0.5rem'}}>🩺 Doctor Settings (Call Transfer)</h2>
+          <p style={{fontSize: '13px', color: '#6b7280', marginBottom: '1rem'}}>Emergency calls will be routed to this phone number. Please include the country code (e.g. +918792256999).</p>
+          <div>
+            <label style={{display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '4px'}}>Doctor's Phone Number</label>
+            <input type="text" placeholder="e.g. +918792256999" value={doctorPhone} onChange={e => setDoctorPhone(e.target.value)} style={{width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px'}} />
           </div>
         </section>
 
