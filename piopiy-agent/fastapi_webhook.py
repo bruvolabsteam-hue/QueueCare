@@ -209,12 +209,16 @@ async def transfer_to_doctor(request: Request):
         logger.info(f"📞 transfer_to_doctor called with data: {data}")
 
         call_id = data.get("call_id", "")
+        doctor_name = data.get("doctor_name", "")
 
         if not supabase:
             return {"message": "Transferring to the doctor now. Please hold."}
 
         # Get doctor phone using RPC to bypass RLS security policies safely
-        rpc_res = supabase.rpc('get_doctor_phone', {'p_clinic_id': 'ffe805a9-c7bb-41ec-a88e-01ebae6331f8'}).execute()
+        rpc_res = supabase.rpc('get_doctor_phone', {
+            'p_clinic_id': 'ffe805a9-c7bb-41ec-a88e-01ebae6331f8',
+            'p_doctor_name': doctor_name
+        }).execute()
         doc_phone = rpc_res.data
 
         if doc_phone:
