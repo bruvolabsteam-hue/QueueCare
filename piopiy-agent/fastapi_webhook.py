@@ -59,21 +59,14 @@ async def check_availability(request: Request):
         if not supabase:
             return {"message": "Doctor is available today for walk-in patients."}
 
-        # Check doctor settings in DB
-        res = supabase.table('doctor_daily_settings').select('*').limit(1).execute()
-        if res.data:
-            settings = res.data[0]
-            max_patients = settings.get('max_patients', 30)
+        # Call RPC function to check doctor availability bypassing RLS safely
+        rpc_res = supabase.rpc('check_doctor_availability', {
+            'p_clinic_id': 'ffe805a9-c7bb-41ec-a88e-01ebae6331f8'
+        }).execute()
 
-            # Count how many patients are already booked today
-            patients_res = supabase.table('patients').select('id', count='exact').eq('status', 'waiting').execute()
-            current_count = patients_res.count if patients_res.count else 0
-
-            if current_count >= max_patients:
-                return {"message": f"Sorry, the doctor is fully booked today. All {max_patients} slots are taken."}
-
-            remaining = max_patients - current_count
-            return {"message": f"Yes, the doctor is available today. There are {remaining} slots remaining out of {max_patients}."}
+        res_data = rpc_res.data
+        if res_data and isinstance(res_data, dict):
+            return {"message": res_data.get("message", "Yes, the doctor is available today.")}
 
         return {"message": "Yes, the doctor is available today for walk-in patients."}
 
