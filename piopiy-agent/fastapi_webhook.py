@@ -28,6 +28,17 @@ else:
     logger.error("❌ SUPABASE_URL or SUPABASE_ANON_KEY not set!")
 
 
+@app.on_event("startup")
+async def startup_event():
+    """Warm up the Supabase database connection during server boot."""
+    try:
+        if supabase:
+            supabase.table('clinics').select('id').limit(1).execute()
+            logger.info("🔥 Database connection warmed up successfully")
+    except Exception as e:
+        logger.error(f"⚠️ Database warmup error: {e}")
+
+
 # ──────────────────────────────────────────────
 # HEALTH CHECK
 # ──────────────────────────────────────────────
