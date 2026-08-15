@@ -213,11 +213,11 @@ async def transfer_to_doctor(request: Request):
         if not supabase:
             return {"message": "Transferring to the doctor now. Please hold."}
 
-        # Get doctor phone
-        res = supabase.table('staff').select('phone').eq('role', 'doctor').limit(1).execute()
+        # Get doctor phone using RPC to bypass RLS security policies safely
+        rpc_res = supabase.rpc('get_doctor_phone', {'p_clinic_id': 'ffe805a9-c7bb-41ec-a88e-01ebae6331f8'}).execute()
+        doc_phone = rpc_res.data
 
-        if res.data and 'phone' in res.data[0] and res.data[0]['phone']:
-            doc_phone = res.data[0]['phone']
+        if doc_phone:
             logger.info(f"📞 Transferring to doctor at {doc_phone}")
 
             # Fire a background HTTP request to TeleCMI API to bridge the call
