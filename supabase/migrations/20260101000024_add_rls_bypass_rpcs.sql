@@ -43,36 +43,41 @@ LANGUAGE plpgsql
 SECURITY DEFINER -- Safely bypasses RLS for this specific check
 AS $$
 DECLARE
-  v_has_active_doctor boolean := false;
+  v_is_active boolean := false;
   v_max_patients integer;
   v_current_count integer;
   v_today date := CURRENT_DATE;
+  v_row_exists boolean := false;
 BEGIN
-  -- 1. Check if there are any active doctor daily settings today for this clinic
+  -- 1. Check if there is a daily settings entry for today
   SELECT EXISTS (
     SELECT 1 
     FROM public.doctor_daily_settings 
     WHERE clinic_id = p_clinic_id 
-      AND date = v_today 
-      AND is_active = true
-  ) INTO v_has_active_doctor;
+      AND date = v_today
+  ) INTO v_row_exists;
 
-  IF NOT v_has_active_doctor THEN
-    -- Check if we have active doctors in staff table as fallback
-    SELECT EXISTS (
-      SELECT 1 
-      FROM public.staff 
-      WHERE clinic_id = p_clinic_id 
-        AND role = 'doctor' 
-        AND is_active = true
-    ) INTO v_has_active_doctor;
-    
-    IF NOT v_has_active_doctor THEN
+  IF v_row_exists THEN
+    -- Check if doctor is active today in daily settings
+    SELECT is_active, max_patients INTO v_is_active, v_max_patients
+    FROM public.doctor_daily_settings
+    WHERE clinic_id = p_clinic_id
+      AND date = v_today
+    LIMIT 1;
+
+    IF NOT v_is_active THEN
       RETURN json_build_object(
         'available', false,
         'message', 'Sorry, the doctor is not available today.'
       );
     END IF;
+  ELSE
+    -- If no daily setup exists (e.g., doctor hasn't started shift yet),
+    -- they are not available today.
+    RETURN json_build_object(
+      'available', false,
+      'message', 'Sorry, the doctor has not started their session today yet.'
+    );
   END IF;
 
   -- 2. Check if the clinic daily limit is reached
@@ -81,13 +86,6 @@ BEGIN
   WHERE clinic_id = p_clinic_id
     AND status = 'waiting'
     AND created_at::date = v_today;
-
-  SELECT max_patients INTO v_max_patients
-  FROM public.doctor_daily_settings
-  WHERE clinic_id = p_clinic_id
-    AND date = v_today
-    AND is_active = true
-  LIMIT 1;
 
   IF v_max_patients IS NOT NULL AND v_current_count >= v_max_patients THEN
     RETURN json_build_object(
