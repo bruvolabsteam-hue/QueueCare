@@ -196,16 +196,25 @@ async def cancel_appointment(request: Request):
 # ──────────────────────────────────────────────
 @app.post("/transfer_to_doctor")
 async def transfer_to_doctor(request: Request):
-    """Fetch the doctor's phone number and trigger TeleCMI to transfer."""
+    """Fetch the doctor's phone number and return it for ElevenLabs SIP REFER transfer."""
     try:
-        data = await request.json()
-        logger.info(f"📞 transfer_to_doctor called with data: {data}")
+        # Safely try parsing json body
+        data = {}
+        try:
+            data = await request.json()
+        except Exception:
+            pass
+        logger.info(f"📞 transfer_to_doctor called. Data: {data}, Query Params: {dict(request.query_params)}")
 
-        call_id = data.get("call_id", "")
+        # Get call_id from query params or JSON payload
+        call_id = request.query_params.get("call_id") or data.get("call_id", "")
         doctor_name = data.get("doctor_name", "")
 
         if not supabase:
-            return {"message": "Transferring to the doctor now. Please hold."}
+            return {
+                "doctor_phone": "",
+                "message": "Transferring to the doctor now. Please hold."
+            }
 
         # Get doctor phone using RPC to bypass RLS security policies safely
         rpc_res = supabase.rpc('get_doctor_phone', {
@@ -215,31 +224,33 @@ async def transfer_to_doctor(request: Request):
         doc_phone = rpc_res.data
 
         if doc_phone:
-            logger.info(f"📞 Transferring to doctor at {doc_phone}")
+            # Normalize doctor phone to E.164 format for ElevenLabs transfer
+            doc_phone_str = str(doc_phone).strip()
+            if not doc_phone_str.startswith('+'):
+                if len(doc_phone_str) == 10:
+                    doc_phone_str = f"+91{doc_phone_str}"
+                else:
+                    doc_phone_str = f"+{doc_phone_str}"
+            
+            logger.info(f"📞 Resolved doctor phone: {doc_phone} -> Normalized: {doc_phone_str}")
 
-            # Fire a background HTTP request to TeleCMI API to bridge the call
-            try:
-                async with aiohttp.ClientSession() as session:
-                    url = "https://rest.telecmi.com/v2/route"
-                    payload = {
-                        "appid": os.environ.get("AGENT_ID"),
-                        "secret": os.environ.get("AGENT_SECRET"),
-                        "from": "917943446883",
-                        "to": doc_phone,
-                        "call_id": call_id
-                    }
-                    async with session.post(url, json=payload) as resp:
-                        logger.info(f"TeleCMI transfer response: {resp.status}")
-            except Exception as transfer_err:
-                logger.error(f"⚠️ TeleCMI transfer error: {transfer_err}")
+            return {
+                "doctor_phone": doc_phone_str,
+                "message": "Transferring the call to the doctor now. Please hold on."
+            }
 
-            return {"message": "Transferring the call to the doctor now. Please hold on."}
-
-        return {"message": "The doctor is not available right now. Please try calling again later."}
+        logger.warning(f"⚠️ No doctor found for clinic or doctor_name: {doctor_name}")
+        return {
+            "doctor_phone": "",
+            "message": "The doctor is not available right now. Please try calling again later."
+        }
 
     except Exception as e:
         logger.error(f"❌ transfer_to_doctor error: {e}")
-        return {"message": "Could not transfer the call right now. Please try again."}
+        return {
+            "doctor_phone": "",
+            "message": "Could not transfer the call right now. Please try again."
+        }
 
 
 # ──────────────────────────────────────────────
