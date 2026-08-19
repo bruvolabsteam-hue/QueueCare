@@ -196,7 +196,7 @@ async def cancel_appointment(request: Request):
 # ──────────────────────────────────────────────
 @app.post("/transfer_to_doctor")
 async def transfer_to_doctor(request: Request):
-    """Fetch the doctor's phone number and return it for ElevenLabs SIP REFER transfer."""
+    """Fetch the doctor's phone number and return it for ElevenLabs SIP REFER transfer, checking availability first."""
     try:
         # Safely try parsing json body
         data = {}
@@ -214,6 +214,24 @@ async def transfer_to_doctor(request: Request):
             return {
                 "doctor_phone": "",
                 "message": "Transferring to the doctor now. Please hold."
+            }
+
+        # Check availability first - block transfer if doctor is off/fully booked
+        avail_res = supabase.rpc('check_doctor_availability', {
+            'p_clinic_id': 'ffe805a9-c7bb-41ec-a88e-01ebae6331f8'
+        }).execute()
+        
+        is_available = True
+        avail_msg = ""
+        if avail_res.data and isinstance(avail_res.data, dict):
+            is_available = avail_res.data.get("available", True)
+            avail_msg = avail_res.data.get("message", "")
+
+        if not is_available:
+            logger.warning(f"⚠️ Blocked transfer: Doctor is not available today. Reason: {avail_msg}")
+            return {
+                "doctor_phone": "",
+                "message": f"Sorry, the doctor is not available right now. {avail_msg}"
             }
 
         # Get doctor phone using RPC to bypass RLS security policies safely
