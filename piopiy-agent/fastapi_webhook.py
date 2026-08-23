@@ -48,6 +48,20 @@ async def startup_event():
 def health_check():
     return {"status": "ok", "message": "Bruvoflow Server is running!"}
 
+@app.get("/diagnose")
+def diagnose():
+    # Return active clinic ID to verify deployment version
+    try:
+        return {
+            "clinic_id": CLINIC_ID,
+            "version": "clinic-id-fixed-v2"
+        }
+    except NameError:
+        return {
+            "clinic_id": "ffe805a9-c7bb-41ec-a88e-01ebae6331f8",
+            "version": "old-code-pre-clinic-id-fix"
+        }
+
 
 # ──────────────────────────────────────────────
 # CHECK AVAILABILITY
