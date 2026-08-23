@@ -258,15 +258,15 @@ async def transfer_to_doctor(request: Request):
         doc_phone = rpc_res.data
 
         if doc_phone:
-            # Normalize doctor phone to E.164 format for ElevenLabs transfer
+            # Normalize doctor phone - TeleCMI expects 91 prefix without "+"
             doc_phone_str = str(doc_phone).strip()
-            if not doc_phone_str.startswith('+'):
-                if len(doc_phone_str) == 10:
-                    doc_phone_str = f"+91{doc_phone_str}"
-                else:
-                    doc_phone_str = f"+{doc_phone_str}"
+            if doc_phone_str.startswith('+'):
+                doc_phone_str = doc_phone_str[1:]
             
-            logger.info(f"📞 Resolved doctor phone: {doc_phone} -> Normalized: {doc_phone_str}")
+            if len(doc_phone_str) == 10:
+                doc_phone_str = f"91{doc_phone_str}"
+            
+            logger.info(f"📞 Resolved doctor phone: {doc_phone} -> Normalized (no +): {doc_phone_str}")
 
             # Log the transfer request in the database so the clinic dashboard can display an alert
             try:
