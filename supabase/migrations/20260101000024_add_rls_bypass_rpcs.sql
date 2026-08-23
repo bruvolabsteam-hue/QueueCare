@@ -48,7 +48,16 @@ DECLARE
   v_current_count integer;
   v_today date := CURRENT_DATE;
   v_row_exists boolean := false;
+  v_existing_dates text;
 BEGIN
+  -- Get all dates in settings to diagnose
+  SELECT string_agg(date::text, ', ') INTO v_existing_dates
+  FROM (
+    SELECT DISTINCT date 
+    FROM public.doctor_daily_settings 
+    WHERE clinic_id = p_clinic_id
+  ) t;
+
   -- 1. Check if there is a daily settings entry for today
   SELECT EXISTS (
     SELECT 1 
@@ -68,7 +77,7 @@ BEGIN
     IF NOT v_is_active THEN
       RETURN json_build_object(
         'available', false,
-        'message', 'Sorry, the doctor is not available today. (DB Date: ' || v_today::text || ', Clinic: ' || p_clinic_id::text || ')'
+        'message', 'Sorry, the doctor is not available today. (DB Date: ' || v_today::text || ', Existing Dates in DB: ' || COALESCE(v_existing_dates, 'None') || ')'
       );
     END IF;
   ELSE
@@ -76,7 +85,7 @@ BEGIN
     -- they are not available today.
     RETURN json_build_object(
       'available', false,
-      'message', 'Sorry, the doctor has not started their session today yet. (DB Date: ' || v_today::text || ', Clinic: ' || p_clinic_id::text || ')'
+      'message', 'Sorry, the doctor has not started their session today yet. (DB Date: ' || v_today::text || ', Existing Dates in DB: ' || COALESCE(v_existing_dates, 'None') || ')'
     );
   END IF;
 
@@ -90,7 +99,7 @@ BEGIN
   IF v_max_patients IS NOT NULL AND v_current_count >= v_max_patients THEN
     RETURN json_build_object(
       'available', false,
-      'message', 'Sorry, the doctor is fully booked today. All slots are taken. (DB Date: ' || v_today::text || ', Clinic: ' || p_clinic_id::text || ')'
+      'message', 'Sorry, the doctor is fully booked today. All slots are taken. (DB Date: ' || v_today::text || ', Existing Dates in DB: ' || COALESCE(v_existing_dates, 'None') || ')'
     );
   END IF;
 
