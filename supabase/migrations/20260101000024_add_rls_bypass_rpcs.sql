@@ -102,3 +102,27 @@ END;
 $$;
 
 ALTER FUNCTION check_doctor_availability(uuid) OWNER TO postgres;
+
+CREATE OR REPLACE FUNCTION dump_clinic_data()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_clinics jsonb;
+  v_staff jsonb;
+  v_daily jsonb;
+BEGIN
+  SELECT json_agg(t) INTO v_clinics FROM (SELECT id, clinic_name FROM public.clinics) t;
+  SELECT json_agg(t) INTO v_staff FROM (SELECT id, name, role, clinic_id, email, phone FROM public.staff) t;
+  SELECT json_agg(t) INTO v_daily FROM (SELECT id, doctor_id, clinic_id, date, is_active, setup_confirmed FROM public.doctor_daily_settings) t;
+  
+  RETURN json_build_object(
+    'clinics', COALESCE(v_clinics, '[]'::jsonb),
+    'staff', COALESCE(v_staff, '[]'::jsonb),
+    'daily_settings', COALESCE(v_daily, '[]'::jsonb)
+  );
+END;
+$$;
+
+ALTER FUNCTION dump_clinic_data() OWNER TO postgres;
