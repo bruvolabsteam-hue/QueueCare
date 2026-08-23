@@ -27,6 +27,8 @@ else:
     supabase = None
     logger.error("❌ SUPABASE_URL or SUPABASE_ANON_KEY not set!")
 
+CLINIC_ID = "a03c3eed-c075-496c-9c03-4c95eac40975"
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -61,7 +63,7 @@ async def check_availability(request: Request):
 
         # Call RPC function to check doctor availability bypassing RLS safely
         rpc_res = supabase.rpc('check_doctor_availability', {
-            'p_clinic_id': 'ffe805a9-c7bb-41ec-a88e-01ebae6331f8'
+            'p_clinic_id': CLINIC_ID
         }).execute()
 
         res_data = rpc_res.data
@@ -104,8 +106,8 @@ async def book_appointment(request: Request, background_tasks: BackgroundTasks):
         if not supabase:
             return {"message": f"Appointment booked for {patient_name}. Please visit the clinic."}
 
-        # Hardcoded clinic ID - RLS blocks anon key from reading clinics table
-        clinic_id = "ffe805a9-c7bb-41ec-a88e-01ebae6331f8"
+        # Global clinic ID
+        clinic_id = CLINIC_ID
 
         # Calculate estimated wait time before inserting
         from datetime import datetime, timedelta, timezone
@@ -218,7 +220,7 @@ async def transfer_to_doctor(request: Request):
 
         # Check availability first - block transfer if doctor is off/fully booked
         avail_res = supabase.rpc('check_doctor_availability', {
-            'p_clinic_id': 'ffe805a9-c7bb-41ec-a88e-01ebae6331f8'
+            'p_clinic_id': CLINIC_ID
         }).execute()
         
         is_available = True
@@ -236,7 +238,7 @@ async def transfer_to_doctor(request: Request):
 
         # Get doctor phone using RPC to bypass RLS security policies safely
         rpc_res = supabase.rpc('get_doctor_phone', {
-            'p_clinic_id': 'ffe805a9-c7bb-41ec-a88e-01ebae6331f8',
+            'p_clinic_id': CLINIC_ID,
             'p_doctor_name': doctor_name
         }).execute()
         doc_phone = rpc_res.data
