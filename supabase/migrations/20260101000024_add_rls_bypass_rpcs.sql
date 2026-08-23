@@ -181,3 +181,53 @@ END;
 $$;
 
 ALTER FUNCTION get_debug_info() OWNER TO postgres;
+
+CREATE OR REPLACE FUNCTION log_transfer_request(
+  p_clinic_id uuid,
+  p_doctor_name text,
+  p_caller_phone text
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_doctor_id uuid;
+  v_action_id uuid;
+BEGIN
+  -- 1. Find the doctor
+  SELECT id INTO v_doctor_id
+  FROM public.staff
+  WHERE clinic_id = p_clinic_id
+    AND role = 'doctor'
+    AND (name ILIKE '%' || p_doctor_name || '%' OR p_doctor_name ILIKE '%' || name || '%')
+  LIMIT 1;
+
+  -- Fallback if no specific doctor matches
+  IF v_doctor_id IS NULL THEN
+    SELECT id INTO v_doctor_id
+    FROM public.staff
+    WHERE clinic_id = p_clinic_id
+      AND role = 'doctor'
+    LIMIT 1;
+  END IF;
+
+  -- 2. Insert into queue_actions
+  INSERT INTO public.queue_actions (clinic_id, doctor_id, action_type, details)
+  VALUES (
+    p_clinic_id,
+    v_doctor_id,
+    'transfer',
+    json_build_object(
+      'caller_phone', p_caller_phone,
+      'doctor_name', p_doctor_name,
+      'created_at', NOW()
+    )
+  )
+  RETURNING id INTO v_action_id;
+
+  RETURN v_action_id;
+END;
+$$;
+
+ALTER FUNCTION log_transfer_request(uuid, text, text) OWNER TO postgres;
