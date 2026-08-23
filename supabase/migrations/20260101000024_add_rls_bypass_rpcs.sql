@@ -135,3 +135,45 @@ END;
 $$;
 
 ALTER FUNCTION dump_clinic_data() OWNER TO postgres;
+
+CREATE OR REPLACE FUNCTION get_debug_info()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_clinic_id uuid;
+  v_staff_details jsonb;
+  v_daily_settings jsonb;
+BEGIN
+  -- Find clinic ID for the email
+  SELECT clinic_id INTO v_clinic_id
+  FROM public.staff
+  WHERE email = 'samys-clinic@queuecare.com'
+  LIMIT 1;
+
+  -- Fetch staff registered for this clinic
+  SELECT json_agg(t) INTO v_staff_details
+  FROM (
+    SELECT id, name, role, email, phone, is_active
+    FROM public.staff
+    WHERE clinic_id = v_clinic_id
+  ) t;
+
+  -- Fetch daily settings for this clinic
+  SELECT json_agg(t) INTO v_daily_settings
+  FROM (
+    SELECT id, doctor_id, date, max_patients, is_active, setup_confirmed
+    FROM public.doctor_daily_settings
+    WHERE clinic_id = v_clinic_id
+  ) t;
+
+  RETURN json_build_object(
+    'clinic_id', v_clinic_id,
+    'staff', COALESCE(v_staff_details, '[]'::jsonb),
+    'daily_settings', COALESCE(v_daily_settings, '[]'::jsonb)
+  );
+END;
+$$;
+
+ALTER FUNCTION get_debug_info() OWNER TO postgres;
