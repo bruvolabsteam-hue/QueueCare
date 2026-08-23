@@ -268,6 +268,19 @@ async def transfer_to_doctor(request: Request):
             
             logger.info(f"📞 Resolved doctor phone: {doc_phone} -> Normalized: {doc_phone_str}")
 
+            # Log the transfer request in the database so the clinic dashboard can display an alert
+            try:
+                # Capture caller phone if passed in request body or query params
+                caller_phone = data.get("phone_number") or request.query_params.get("from") or data.get("caller_phone", "")
+                supabase.rpc('log_transfer_request', {
+                    'p_clinic_id': CLINIC_ID,
+                    'p_doctor_name': doctor_name,
+                    'p_caller_phone': caller_phone
+                }).execute()
+                logger.info(f"📝 Logged transfer request in queue_actions for doctor: {doctor_name}")
+            except Exception as log_err:
+                logger.error(f"⚠️ Failed to log transfer request: {log_err}")
+
             return {
                 "doctor_phone": doc_phone_str,
                 "message": "Transferring the call to the doctor now. Please hold on."

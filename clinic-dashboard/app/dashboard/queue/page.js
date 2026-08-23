@@ -157,6 +157,7 @@ export default function LiveQueuePage() {
   const [allDoctors, setAllDoctors] = useState([]); // for the modal dropdown
   const [loading, setLoading] = useState(true);
   const [showGlobalAdd, setShowGlobalAdd] = useState(false);
+  const [transferAlerts, setTransferAlerts] = useState([]);
   const supabase = createClient();
 
   const loadData = useCallback(async () => {
@@ -231,6 +232,40 @@ export default function LiveQueuePage() {
   }, []);
 
   useEffect(() => { loadData(); }, []);
+
+  useEffect(() => {
+    if (!clinicId) return;
+
+    const channel = supabase
+      .channel('queue_actions_changes')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'queue_actions',
+        filter: `clinic_id=eq.${clinicId}`
+      }, (payload) => {
+        if (payload.new.action_type === 'transfer') {
+          const details = payload.new.details || {};
+          const docId = payload.new.doctor_id;
+          const docName = doctorPanels.find(p => p.id === docId)?.name || 'the doctor';
+          
+          setTransferAlerts(prev => [
+            ...prev,
+            {
+              id: payload.new.id,
+              doctorName: docName,
+              callerPhone: details.caller_phone || 'Unknown Caller',
+              time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+          ]);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [clinicId, doctorPanels]);
 
   // When a patient is added to a doctor who doesn't yet have a panel, add their panel dynamically
   const handlePatientAdded = (doctorId, isOffline, startTime) => {
@@ -332,6 +367,48 @@ export default function LiveQueuePage() {
           onSuccess={handlePatientAdded}
         />
       )}
+
+      {/* ── Floating Call Transfer Alerts ── */}
+      <div style={{ position: 'fixed', bottom: '24px', right: '24px', display: 'flex', flexDirection: 'column', gap: '12px', zIndex: 1000 }}>
+        {transferAlerts.map(alert => (
+          <div key={alert.id} style={{
+            background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px',
+            padding: '16px', width: '340px', boxShadow: '0 10px 30px rgba(37,99,235,0.18)',
+            display: 'flex', flexDirection: 'column', gap: '8px', animation: 'slideIn 0.2s ease',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '13px', fontWeight: '800', color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                📞 Call Transfer Alert
+              </span>
+              <button 
+                onClick={() => setTransferAlerts(prev => prev.filter(a => a.id !== alert.id))}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: '#9ca3af', padding: 0, lineHeight: 1 }}
+              >
+                ×
+              </button>
+            </div>
+            <p style={{ margin: 0, fontSize: '13px', color: '#1f2937', lineHeight: '1.4' }}>
+              Patient at <strong>{alert.callerPhone}</strong> requested to speak with <strong>Dr. {alert.doctorName}</strong>.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+              <span style={{ fontSize: '11px', color: '#6b7280' }}>🕐 {alert.time}</span>
+              {alert.callerPhone && alert.callerPhone !== 'Unknown Caller' && (
+                <a 
+                  href={`tel:${alert.callerPhone}`} 
+                  style={{ 
+                    fontSize: '12px', fontWeight: '700', color: 'white', 
+                    background: '#2563eb', padding: '5px 10px', borderRadius: '6px', 
+                    textDecoration: 'none', boxShadow: '0 2px 6px rgba(37,99,235,0.3)' 
+                  }}
+                >
+                  Call Back
+                </a>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
