@@ -68,7 +68,7 @@ BEGIN
     IF NOT v_is_active THEN
       RETURN json_build_object(
         'available', false,
-        'message', 'Sorry, the doctor is not available today.'
+        'message', 'Sorry, the doctor is not available today. (DB Date: ' || v_today::text || ', Clinic: ' || p_clinic_id::text || ')'
       );
     END IF;
   ELSE
@@ -76,7 +76,7 @@ BEGIN
     -- they are not available today.
     RETURN json_build_object(
       'available', false,
-      'message', 'Sorry, the doctor has not started their session today yet.'
+      'message', 'Sorry, the doctor has not started their session today yet. (DB Date: ' || v_today::text || ', Clinic: ' || p_clinic_id::text || ')'
     );
   END IF;
 
@@ -90,7 +90,7 @@ BEGIN
   IF v_max_patients IS NOT NULL AND v_current_count >= v_max_patients THEN
     RETURN json_build_object(
       'available', false,
-      'message', 'Sorry, the doctor is fully booked today. All slots are taken.'
+      'message', 'Sorry, the doctor is fully booked today. All slots are taken. (DB Date: ' || v_today::text || ', Clinic: ' || p_clinic_id::text || ')'
     );
   END IF;
 
