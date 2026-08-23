@@ -18,18 +18,19 @@ BEGIN
       AND phone IS NOT NULL
       AND phone != ''
     LIMIT 1;
+
+    -- If a specific name was requested, do not fallback to another doctor if not found
+    RETURN v_phone;
   END IF;
 
-  -- 2. Fallback to the first doctor in the clinic if no name matches
-  IF v_phone IS NULL OR v_phone = '' THEN
-    SELECT phone INTO v_phone
-    FROM public.staff
-    WHERE clinic_id = p_clinic_id
-      AND role = 'doctor'
-      AND phone IS NOT NULL
-      AND phone != ''
-    LIMIT 1;
-  END IF;
+  -- 2. Fallback to the first doctor in the clinic ONLY if no name was specified
+  SELECT phone INTO v_phone
+  FROM public.staff
+  WHERE clinic_id = p_clinic_id
+    AND role = 'doctor'
+    AND phone IS NOT NULL
+    AND phone != ''
+  LIMIT 1;
 
   RETURN v_phone;
 END;
