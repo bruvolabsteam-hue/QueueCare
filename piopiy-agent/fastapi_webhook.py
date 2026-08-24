@@ -125,30 +125,6 @@ async def book_appointment(request: Request, background_tasks: BackgroundTasks):
         # Global clinic ID
         clinic_id = CLINIC_ID
 
-        # Calculate estimated wait time before inserting
-        from datetime import datetime, timedelta, timezone
-        ist = timezone(timedelta(hours=5, minutes=30))
-        today_start = datetime.now(ist).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
-
-        try:
-            # Count patients currently waiting today
-            patients_res = supabase.table('patients').select('id', count='exact').eq('clinic_id', clinic_id).eq('status', 'waiting').gte('created_at', today_start).execute()
-            waiting_count = patients_res.count if patients_res.count is not None else 0
-
-            # Get clinic's average wait time per patient
-            clinic_res = supabase.table('clinics').select('avg_time_per_patient_mins').eq('id', clinic_id).execute()
-            avg_time = 10
-            if clinic_res.data:
-                avg_time = clinic_res.data[0].get('avg_time_per_patient_mins', 10) or 10
-        except Exception as query_err:
-            logger.error(f"⚠️ Error querying wait time: {query_err}")
-            waiting_count = 0
-            avg_time = 10
-
-        est_wait = waiting_count * avg_time
-        est_time_dt = datetime.now(ist) + timedelta(minutes=est_wait)
-        est_time_str = est_time_dt.strftime('%I:%M %p')
-
         # Call the RPC to properly generate a token
         rpc_res = supabase.rpc('generate_daily_token', {
             'p_clinic_id': clinic_id,
@@ -160,6 +136,18 @@ async def book_appointment(request: Request, background_tasks: BackgroundTasks):
         }).execute()
         token = rpc_res.data
         logger.info(f"✅ Token generated: {token} for {patient_name} ({phone})")
+
+        # Calculate estimated wait time based on token number (10 minutes average per patient)
+        from datetime import datetime, timedelta, timezone
+        ist = timezone(timedelta(hours=5, minutes=30))
+        token_num = 1
+        try:
+            token_num = int(token)
+        except Exception:
+            pass
+        est_wait = (token_num - 1) * 10  # Patients ahead * 10 mins
+        est_time_dt = datetime.now(ist) + timedelta(minutes=est_wait)
+        est_time_str = est_time_dt.strftime('%I:%M %p')
 
         # --- SEND SMS AND WHATSAPP (offloaded to background task for instant call reply) ---
         msg = f"Hello {patient_name}, your appointment is confirmed! Your token number is {token}. Estimated turn: {est_time_str}."
