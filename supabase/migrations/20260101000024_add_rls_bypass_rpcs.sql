@@ -606,3 +606,33 @@ $$;
 
 ALTER FUNCTION public.get_active_doctor_id(uuid) OWNER TO postgres;
 GRANT EXECUTE ON FUNCTION public.get_active_doctor_id(uuid) TO anon, authenticated, service_role;
+
+
+-- 4.4 Define get_active_doctor_details helper
+CREATE OR REPLACE FUNCTION public.get_active_doctor_details(p_clinic_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_res jsonb;
+BEGIN
+  SELECT jsonb_build_object(
+    'doctor_id', s.id,
+    'name', s.name,
+    'phone', s.phone
+  ) INTO v_res
+  FROM public.doctor_daily_settings d
+  JOIN public.staff s ON s.id = d.doctor_id
+  WHERE d.clinic_id = p_clinic_id
+    AND d.date = CURRENT_DATE
+    AND d.is_active = true
+  LIMIT 1;
+  
+  RETURN COALESCE(v_res, '{}'::jsonb);
+END;
+$$;
+
+ALTER FUNCTION public.get_active_doctor_details(uuid) OWNER TO postgres;
+GRANT EXECUTE ON FUNCTION public.get_active_doctor_details(uuid) TO anon, authenticated, service_role;
