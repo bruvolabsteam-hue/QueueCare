@@ -341,13 +341,37 @@ async def transfer_to_doctor(request: Request):
             }
 
         # Get doctor phone using RPC to bypass RLS security policies safely
-        rpc_res = await run_db(
-            lambda: supabase.rpc('get_doctor_phone', {
-                'p_clinic_id': CLINIC_ID,
-                'p_doctor_name': doctor_name
-            }).execute()
-        )
-        doc_phone = rpc_res.data if rpc_res else None
+        doc_phone = None
+        resolved_doc_name = doctor_name
+
+        if doctor_name:
+            rpc_res = await run_db(
+                lambda: supabase.rpc('get_doctor_phone', {
+                    'p_clinic_id': CLINIC_ID,
+                    'p_doctor_name': doctor_name
+                }).execute()
+            )
+            doc_phone = rpc_res.data if rpc_res else None
+
+        # Fallback: resolve active doctor on duty today if name was empty or not matched
+        if not doc_phone:
+            logger.info("🔍 Doctor name empty or lookup failed. Resolving active doctor details for today...")
+            try:
+                active_res = await run_db(
+                    lambda: supabase.rpc('get_active_doctor_details', {
+                        'p_clinic_id': CLINIC_ID
+                    }).execute()
+                )
+                active_data = active_res.data if active_res else {}
+                if active_data and isinstance(active_data, dict):
+                    doc_phone = active_data.get('phone')
+                    resolved_doc_name = active_data.get('name') or "Doctor"
+                    logger.info(f"✅ Resolved active doctor: {resolved_doc_name} with phone: {doc_phone}")
+            except Exception as active_err:
+                logger.error(f"⚠️ Error resolving active doctor details: {active_err}")
+
+        # Normalize the name we use for logging
+        log_doc_name = resolved_doc_name if resolved_doc_name else "Doctor"
 
         if doc_phone:
             # Normalize doctor phone strictly to Indian carrier format (91XXXXXXXXXX without '+')
@@ -369,11 +393,11 @@ async def transfer_to_doctor(request: Request):
                 await run_db(
                     lambda: supabase.rpc('log_transfer_request', {
                         'p_clinic_id': CLINIC_ID,
-                        'p_doctor_name': doctor_name,
+                        'p_doctor_name': log_doc_name,
                         'p_caller_phone': caller_phone_clean
                     }).execute()
                 )
-                logger.info(f"📝 Logged transfer request in queue_actions for doctor: {doctor_name}, caller: {caller_phone_clean}")
+                logger.info(f"📝 Logged transfer request in queue_actions for doctor: {log_doc_name}, caller: {caller_phone_clean}")
             except Exception as log_err:
                 logger.error(f"⚠️ Failed to log transfer request: {log_err}")
 
