@@ -189,16 +189,31 @@ async def book_appointment(request: Request, background_tasks: BackgroundTasks):
 
         clinic_id = CLINIC_ID
 
-        # Call the RPC to properly generate a token
+        # Resolve today's active doctor_id bypassing RLS
+        doctor_id = None
+        try:
+            doc_res = await run_db(
+                lambda: supabase.rpc('get_active_doctor_id', {
+                    'p_clinic_id': clinic_id
+                }).execute()
+            )
+            doctor_id = doc_res.data if doc_res else None
+            logger.info(f"🔍 Resolved active doctor for booking: {doctor_id}")
+        except Exception as doc_err:
+            logger.error(f"⚠️ Error resolving active doctor: {doc_err}")
+
+        # Call the RPC to properly generate a token with clean parameters
+        rpc_params = {
+            'p_clinic_id': clinic_id,
+            'p_name': patient_name,
+            'p_phone': phone,
+            'p_registration_method': 'walk-in'
+        }
+        if doctor_id:
+            rpc_params['p_doctor_id'] = doctor_id
+
         rpc_res = await run_db(
-            lambda: supabase.rpc('generate_daily_token', {
-                'p_clinic_id': clinic_id,
-                'p_name': patient_name,
-                'p_phone': phone,
-                'p_registration_method': 'walk-in',
-                'p_language': 'auto',
-                'p_travel_category': travel_category
-            }).execute()
+            lambda: supabase.rpc('generate_daily_token', rpc_params).execute()
         )
         token = rpc_res.data if rpc_res else "1"
         logger.info(f"✅ Token generated: {token} for {patient_name} ({phone})")
