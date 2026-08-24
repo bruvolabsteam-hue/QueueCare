@@ -1,85 +1,102 @@
-# Project: BruvoFlow Budget AI Infrastructure
+# Project: ElevenLabs Voice Agent Telephony, Database Schema & Clinic Dashboard Notification System
 
 ## Architecture
-- **Database**: Supabase PostgreSQL database storing a single configuration row in the `global_settings` table.
-- **LLM Engine**: Local Ollama instance running `llama3` on WSL, accessed via HTTP POST to `/api/chat` using the `ollama_url` saved in `global_settings`.
-- **Speech-to-Text & Inbound Call Routing**: Exotel inbound webhook receiving voice calls, using `<Gather input="speech">` to capture transcription.
-- **Text-to-Speech (TTS)**: ElevenLabs API (`https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM`) generating audio files from Ollama responses.
-- **Audio Streamer**: Dynamic Next.js API endpoint `/api/webhooks/exotel/audio` streaming cached ElevenLabs audio back to Exotel via `<Play>`.
-- **Settings Dashboard**: Super Admin UI updated to configure Ollama, ElevenLabs, and Exotel credentials, eliminating Anthropic and Bland AI inputs.
+- **Voice Agent Webhook Backend**: FastAPI service (`piopiy-agent/fastapi_webhook.py`) deployed on Heroku (`https://bruvoflow-4dbecaaa15fd.herokuapp.com`). Exposes `/diagnose`, `/check_availability`, `/book_appointment`, `/cancel_appointment`, and `/transfer_to_doctor`.
+- **Database & Cloud Storage**: Supabase Postgres instance (`https://oddvrnamlsenvftbnzic.supabase.co`). Provides relational tables (`clinics`, `staff`, `patients`, `queue_actions`, `doctor_daily_settings`), Row Level Security (RLS), and SECURITY DEFINER RPC functions.
+- **Realtime Broadcast**: Supabase Realtime publication (`supabase_realtime`) broadcasting Postgres `INSERT` events on `queue_actions` to web dashboard clients.
+- **Clinic Dashboard Frontend**: Next.js React application (`clinic-dashboard/app/dashboard/queue/page.js`) subscribed to live queue changes and displaying floating, self-dismissible Call Transfer alert toasts with active "Call Back" action buttons.
+- **E2E Testing Harness**: Automated verification suite validating live Heroku and Supabase endpoints across functional, boundary, integration, and stress tiers.
+
+---
+
+## Feature Inventory
+| # | Feature | Description | Milestone | Source |
+|---|---------|-------------|-----------|--------|
+| 1 | `queue_actions` Schema Integrity | Alter `action_type` to VARCHAR, add `doctor_id` UUID FK and `details` JSONB, make `token_number` nullable | M1 | ORIGINAL_REQUEST §R2 |
+| 2 | SECURITY DEFINER Transfer RPCs | Deploy and verify `check_doctor_availability`, `get_doctor_phone`, `log_transfer_request`, and `get_latest_transfer_actions` with proper security search paths | M1 | ORIGINAL_REQUEST §R2 |
+| 3 | Performance Indexes & Cancel RPC | Add composite indexes on `queue_actions`, `doctor_daily_settings`, `patients` and create `cancel_appointment` RPC for secure RLS bypass | M1 | Survey Findings |
+| 4 | Indian Carrier Telephony Normalization | Strict normalization to 12-digit Indian routing `91XXXXXXXXXX` (no `+`, handling 10-digit, 11-digit with leading 0, 12-digit with 91, and stripping non-digits) | M2 | ORIGINAL_REQUEST §R1 |
+| 5 | Sub-Second Webhook Latency | Programmatic wait time computation in Python, background notification tasks, and async event loop concurrency | M2 | ORIGINAL_REQUEST §R1 |
+| 6 | Robust Webhook Endpoints | Optimize `/diagnose`, `/check_availability`, `/book_appointment`, `/cancel_appointment`, and `/transfer_to_doctor` with service role key support | M2 | ORIGINAL_REQUEST §R1 |
+| 7 | Real-Time Dashboard Subscription | Listen to `queue_actions` `INSERT` events filtered by `clinic_id` in `clinic-dashboard/app/dashboard/queue/page.js` | M3 | ORIGINAL_REQUEST §R3 |
+| 8 | Floating Dismissible Alert Toast | Floating card at bottom-right showing caller phone, doctor name, timestamp, close button (`×`), and "Call Back" `<a href="tel:...">` button | M3 | ORIGINAL_REQUEST §R3 |
+| 9 | Defensive UI State Resilience | Fallback doctor resolution (`allDoctors`, `details.doctor_name`), safe JSON parsing, and prefix deduplication ("Dr. ") | M3 | Survey Findings |
+| 10 | Automated Diagnostic Test Scripts | End-to-end Python / JS test suite verifying live Heroku endpoints (`https://bruvoflow-4dbecaaa15fd.herokuapp.com`) and Supabase state | M4 | ORIGINAL_REQUEST §R4 |
+| 11 | Complete Tier 1-4 E2E Test Suite | Comprehensive opaque-box test suite covering feature, boundary, integration, and real-world application scenarios | M4 | ORIGINAL_REQUEST §R4 |
+| 12 | 100% E2E Verification & Adversarial Hardening | Pass all test tiers and harden edge cases with adversarial tests | Final Milestone | Project Pattern |
+
+---
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M1 | Database Migration & Schema Alignment | Create `global_settings` table migration, fix clinics `clinic_name` references, run migration. | None | DONE |
-| M2 | Settings UI Refactoring | Refactor `settings/ai/page.tsx` to use new database columns and resolve input state conflicts. | M1 | DONE |
-| M3 | Local Ollama Integration | Refactor `src/lib/ai/claude.ts` to call WSL Ollama `llama3` and align clinic name usage. | M1 | DONE |
-| M4 | Exotel Webhook & Audio Streamer | Implement `exotel/route.ts` with Exoml response & ElevenLabs API integration, and create `/exotel/audio` endpoint. | M2, M3 | DONE |
-| M5 | WhatsApp Update & E2E Validation | Update WhatsApp webhook to route through Ollama and run full system verification. | M3 | BLOCKED (Victory Rejection) |
+| M1 | Database Schema Integrity & RLS Bypass RPCs | `supabase/migrations/20260101000024_add_rls_bypass_rpcs.sql`, RPC search paths, indexes, `cancel_appointment` RPC | none | DONE |
+| M2 | Webhook Optimization & Telephony Dialing Formats | `piopiy-agent/fastapi_webhook.py`, Indian carrier format normalization (`91XXXXXXXXXX`), async concurrency, sub-second latency, service role key support | M1 | PLANNED |
+| M3 | Real-Time Dashboard Notification UI | `clinic-dashboard/app/dashboard/queue/page.js`, floating card with Call Back button, error-free dismiss, fallback doctor lookup | M1 | PLANNED |
+| M4 | E2E Testing Suite & Diagnostic Harness | `tests/e2e/test_telephony_suite.py`, live Heroku & Supabase verification, test runner | M1, M2, M3 | PLANNED |
+| Final | 100% E2E Pass & Adversarial Hardening | Execute full test suite against live systems, verify all acceptance criteria, adversarial stress-testing | M4 | PLANNED |
+
+---
 
 ## Interface Contracts
 
-### 1. Database Schema (`global_settings` table)
-```sql
-CREATE TABLE public.global_settings (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  ollama_url TEXT DEFAULT 'http://127.0.0.1:11434',
-  elevenlabs_api_key TEXT,
-  exotel_account_sid TEXT,
-  exotel_api_key TEXT,
-  exotel_api_token TEXT,
-  whatsapp_api_key TEXT,
-  support_whatsapp_number VARCHAR,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
-### 2. Ollama Chat Completions `/api/chat`
-- **Request**:
+### 1. Telephony Dialing Interface (`fastapi_webhook.py` ↔ TeleCMI / ElevenLabs)
+- **Endpoint**: `POST /transfer_to_doctor`
+- **Request Body**:
   ```json
   {
-    "model": "llama3",
-    "messages": [
-      { "role": "system", "content": "system prompt" },
-      { "role": "user", "content": "user query" }
-    ],
-    "stream": false
+    "doctor_name": "Dr. Sarah",
+    "phone_number": "9113526504",
+    "call_id": "optional_string"
   }
   ```
-- **Response**:
+- **Response Format** (`200 OK`):
   ```json
   {
-    "message": {
-      "role": "assistant",
-      "content": "AI response text"
-    }
+    "doctor_phone": "919113526504",
+    "message": "Transferring the call to the doctor now. Please hold on."
+  }
+  ```
+- **Constraint**: `doctor_phone` MUST be exactly 12 digits starting with `91` and MUST NOT contain leading `+`. If unavailable, returns `doctor_phone: ""` with explanation message.
+
+### 2. Database RPC Interface (`fastapi_webhook.py` ↔ Supabase Postgres)
+- **`check_doctor_availability(p_clinic_id uuid) RETURNS jsonb`**:
+  Returns `{"available": boolean, "message": string}`.
+- **`get_doctor_phone(p_clinic_id uuid, p_doctor_name text) RETURNS text`**:
+  Returns phone number string or `NULL`.
+- **`log_transfer_request(p_clinic_id uuid, p_doctor_name text, p_caller_phone text) RETURNS uuid`**:
+  Inserts into `queue_actions` with `action_type = 'transfer'` and `details = {"caller_phone": ..., "doctor_name": ..., "created_at": ...}`. Returns action UUID.
+- **`get_latest_transfer_actions() RETURNS jsonb`**:
+  Returns array of latest 5 transfer records.
+- **`cancel_appointment(p_clinic_id uuid, p_phone text) RETURNS jsonb`**:
+  Cancels active waiting appointment for given phone number with `SECURITY DEFINER` RLS bypass.
+
+### 3. Real-Time Event Contract (Supabase Realtime ↔ `LiveQueuePage`)
+- **Channel**: `queue_actions_changes`
+- **Filter**: `clinic_id=eq.<CLINIC_ID>`
+- **Event**: `INSERT` on `queue_actions`
+- **Payload Schema**:
+  ```json
+  {
+    "id": "uuid",
+    "clinic_id": "uuid",
+    "doctor_id": "uuid",
+    "action_type": "transfer",
+    "details": {
+      "caller_phone": "9113526504",
+      "doctor_name": "Dr. Sarah",
+      "created_at": "2026-08-24T08:30:00Z"
+    },
+    "created_at": "2026-08-24T08:30:00Z"
   }
   ```
 
-### 3. Exotel Webhook Routing (Exoml XML Response)
-- **Response (Gather speech)**:
-  ```xml
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Response>
-    <Gather input="speech" action="/api/webhooks/exotel?action=speech" method="POST" timeout="5">
-      <Play>/api/webhooks/exotel/audio?id=[audioId]</Play>
-    </Gather>
-  </Response>
-  ```
-- **Response (Hangup)**:
-  ```xml
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Response>
-    <Play>/api/webhooks/exotel/audio?id=[audioId]</Play>
-    <Hangup/>
-  </Response>
-  ```
+---
 
 ## Code Layout
-- `supabase/migrations/20260101000018_create_global_settings.sql` - DB schema creation
-- `super_admin_web/src/app/(dashboard)/settings/ai/page.tsx` - Settings UI page
-- `super_admin_web/src/lib/ai/claude.ts` - Local Ollama LLM client
-- `super_admin_web/src/lib/sms/exotel.ts` - SMS client (reconfigured for separate SID/key/token)
-- `super_admin_web/src/app/api/webhooks/exotel/route.ts` - Exotel webhook orchestrator
-- `super_admin_web/src/app/api/webhooks/exotel/audio/route.ts` - ElevenLabs audio caching/streaming route
-- `super_admin_web/src/app/api/webhooks/whatsapp/route.ts` - WhatsApp webhook receiver
+- `piopiy-agent/fastapi_webhook.py`: FastApi telephony webhook backend
+- `piopiy-agent/requirements.txt`: Python dependencies
+- `supabase/migrations/20260101000024_add_rls_bypass_rpcs.sql`: Migration script for RPCs and `queue_actions`
+- `clinic-dashboard/app/dashboard/queue/page.js`: Live Queue Next.js React client with Realtime subscription & Call Back card
+- `tests/e2e/test_telephony_suite.py`: Automated Python verification suite
+- `tests/e2e/test-suite.js`: JavaScript verification runner

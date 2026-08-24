@@ -244,18 +244,45 @@ export default function LiveQueuePage() {
         table: 'queue_actions',
         filter: `clinic_id=eq.${clinicId}`
       }, (payload) => {
-        if (payload.new.action_type === 'transfer') {
-          const details = payload.new.details || {};
+        if (payload?.new?.action_type === 'transfer') {
+          let details = {};
+          try {
+            if (typeof payload.new.details === 'string') {
+              details = JSON.parse(payload.new.details);
+            } else if (payload.new.details && typeof payload.new.details === 'object') {
+              details = payload.new.details;
+            }
+          } catch (err) {
+            console.error('Error parsing transfer details:', err);
+          }
+
           const docId = payload.new.doctor_id;
-          const docName = doctorPanels.find(p => p.id === docId)?.name || 'the doctor';
-          
+          const rawDocName = (
+            doctorPanels.find(p => p.id === docId)?.name ||
+            allDoctors.find(d => d.id === docId)?.name ||
+            details.doctor_name ||
+            'the doctor'
+          ).trim();
+
+          const formattedDoctorName = (
+            rawDocName.toLowerCase().startsWith('dr.') || rawDocName.toLowerCase().startsWith('dr ')
+              ? rawDocName
+              : rawDocName === 'the doctor'
+                ? rawDocName
+                : `Dr. ${rawDocName}`
+          );
+
+          const callerPhone = details.caller_phone || payload.new.token_number || 'Unknown Caller';
+
           setTransferAlerts(prev => [
             ...prev,
             {
-              id: payload.new.id,
-              doctorName: docName,
-              callerPhone: details.caller_phone || 'Unknown Caller',
-              time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              id: payload.new.id || `${Date.now()}-${Math.random()}`,
+              doctorName: formattedDoctorName,
+              callerPhone: callerPhone,
+              time: payload.new.created_at
+                ? new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }
           ]);
         }
@@ -265,7 +292,7 @@ export default function LiveQueuePage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [clinicId, doctorPanels]);
+  }, [clinicId, doctorPanels, allDoctors]);
 
   // When a patient is added to a doctor who doesn't yet have a panel, add their panel dynamically
   const handlePatientAdded = (doctorId, isOffline, startTime) => {
@@ -389,7 +416,7 @@ export default function LiveQueuePage() {
               </button>
             </div>
             <p style={{ margin: 0, fontSize: '13px', color: '#1f2937', lineHeight: '1.4' }}>
-              Patient at <strong>{alert.callerPhone}</strong> requested to speak with <strong>Dr. {alert.doctorName}</strong>.
+              Patient at <strong>{alert.callerPhone}</strong> requested to speak with <strong>{alert.doctorName}</strong>.
             </p>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
               <span style={{ fontSize: '11px', color: '#6b7280' }}>🕐 {alert.time}</span>
