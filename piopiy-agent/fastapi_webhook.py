@@ -472,6 +472,74 @@ async def send_sms(phone: str, message: str):
 
 
 # ──────────────────────────────────────────────
+# AUTOMATIC CALLBACK FOR MISSED CALLS
+# ──────────────────────────────────────────────
+async def trigger_elevenlabs_callback(caller_phone: str):
+    """Initiate an outbound callback to the patient via ElevenLabs API."""
+    try:
+        api_key = os.environ.get("ELEVENLABS_API_KEY")
+        agent_id = os.environ.get("ELEVENLABS_AGENT_ID")
+        phone_number_id = os.environ.get("ELEVENLABS_PHONE_ID")  # Trunk or number ID in ElevenLabs
+        provider = os.environ.get("ELEVENLABS_TELEPHONY_PROVIDER", "sip-trunk")  # "sip-trunk" or "twilio"
+        
+        if not api_key or not agent_id or not phone_number_id:
+            logger.warning("⚠️ ElevenLabs Outbound credentials missing. Skipping callback. Make sure ELEVENLABS_API_KEY, ELEVENLABS_AGENT_ID, and ELEVENLABS_PHONE_ID are configured.")
+            return
+
+        # Ensure patient phone is in E.164 format (with leading +)
+        # Strip any existing leading + to avoid double prefixing
+        digits_only = "".join(filter(str.isdigit, caller_phone))
+        clean_phone = f"+{digits_only}"
+
+        url = f"https://api.elevenlabs.io/v1/convai/{provider}/outbound-call"
+        headers = {
+            "xi-api-key": api_key,
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "agent_id": agent_id,
+            "agent_phone_number_id": phone_number_id,
+            "to_number": clean_phone
+        }
+
+        logger.info(f"📤 Triggering ElevenLabs Outbound Call to {clean_phone} via provider: {provider}")
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, headers=headers, json=payload) as resp:
+                result = await resp.json()
+                if resp.status == 200:
+                    logger.info(f"✅ ElevenLabs Outbound Call initiated successfully for: {clean_phone}")
+                else:
+                    logger.error(f"❌ ElevenLabs Outbound Call failed: {result}")
+    except Exception as e:
+        logger.error(f"❌ Error initiating ElevenLabs outbound call: {e}")
+
+
+@app.post("/telecmi_call_event")
+async def telecmi_call_event(request: Request, background_tasks: BackgroundTasks):
+    """Endpoint for TeleCMI call events. Triggers an ElevenLabs outbound callback if an inbound call is missed."""
+    try:
+        data = await request.json()
+        logger.info(f"📞 TeleCMI call event received: {data}")
+        
+        # Determine call parameters
+        direction = data.get("direction")
+        status = data.get("status")
+        caller_phone = data.get("from")
+        
+        # Trigger outbound call if incoming call was missed, busy, or unanswered
+        if direction == "inbound" and status in ["missed", "no-answer", "busy", "failed"]:
+            logger.warning(f"⚠️ Missed incoming call from patient {caller_phone}. Status: {status}. Triggering automatic callback...")
+            background_tasks.add_task(trigger_elevenlabs_callback, str(caller_phone))
+            
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"❌ Error in telecmi_call_event: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+# ──────────────────────────────────────────────
 # RUN SERVER
 # ──────────────────────────────────────────────
 if __name__ == "__main__":
