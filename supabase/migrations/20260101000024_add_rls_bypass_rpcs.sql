@@ -182,6 +182,12 @@ $$;
 
 ALTER FUNCTION get_debug_info() OWNER TO postgres;
 
+-- Alter queue_actions table to fix original database schema bug (where CREATE IF NOT EXISTS skipped these updates)
+ALTER TABLE public.queue_actions ALTER COLUMN action_type TYPE VARCHAR;
+ALTER TABLE public.queue_actions ADD COLUMN IF NOT EXISTS doctor_id UUID REFERENCES public.staff(id) ON DELETE CASCADE;
+ALTER TABLE public.queue_actions ADD COLUMN IF NOT EXISTS details JSONB;
+ALTER TABLE public.queue_actions ALTER COLUMN token_number DROP NOT NULL;
+
 CREATE OR REPLACE FUNCTION log_transfer_request(
   p_clinic_id uuid,
   p_doctor_name text,
