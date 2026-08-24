@@ -231,3 +231,24 @@ END;
 $$;
 
 ALTER FUNCTION log_transfer_request(uuid, text, text) OWNER TO postgres;
+
+CREATE OR REPLACE FUNCTION get_latest_transfer_actions()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_res jsonb;
+BEGIN
+  SELECT json_agg(t) INTO v_res
+  FROM (
+    SELECT id, clinic_id, doctor_id, action_type, details, created_at
+    FROM public.queue_actions
+    ORDER BY created_at DESC
+    LIMIT 5
+  ) t;
+  RETURN COALESCE(v_res, '[]'::jsonb);
+END;
+$$;
+
+ALTER FUNCTION get_latest_transfer_actions() OWNER TO postgres;
