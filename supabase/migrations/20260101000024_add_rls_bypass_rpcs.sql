@@ -507,6 +507,9 @@ DECLARE
     v_wait_time_mins INTEGER;
     v_regional_lang VARCHAR;
     v_sms_body TEXT;
+    v_waiting_count INTEGER;
+    v_est_wait INTEGER;
+    v_est_time VARCHAR;
 BEGIN
     -- 1. Find the maximum token number generated today for this clinic AND doctor
     IF p_doctor_id IS NOT NULL THEN
@@ -541,15 +544,27 @@ BEGIN
     FROM clinics 
     WHERE id = p_clinic_id;
 
-    -- 5. Generate message content
+    -- 5. Calculate waiting count and estimated turn time for message
+    SELECT COUNT(*) INTO v_waiting_count
+    FROM patients
+    WHERE clinic_id = p_clinic_id
+      AND status = 'waiting'
+      AND DATE(created_at AT TIME ZONE 'UTC') = v_today;
+
+    v_est_wait := v_waiting_count * v_wait_time_mins;
+    v_est_time := to_char(NOW() + (v_est_wait || ' minutes')::interval, 'HH12:MI AM');
+
+    -- 6. Generate message content
     v_sms_body := get_token_message(
       v_regional_lang, 
       p_name, 
-      v_new_token::TEXT, 
-      v_wait_time_mins::TEXT
+      v_new_token, 
+      v_waiting_count,
+      v_est_time,
+      v_est_wait
     );
 
-    -- 6. Enqueue Message
+    -- 7. Enqueue Message
     INSERT INTO public.pending_messages (clinic_id, patient_phone, event_type, message_content, status)
     VALUES (
       p_clinic_id, 
