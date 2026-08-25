@@ -72,6 +72,8 @@ DECLARE
   v_row_exists boolean := false;
   v_existing_dates text;
   v_doctor_name text;
+  v_start_time TIME;
+  v_formatted_start text;
 BEGIN
   -- Gather distinct dates for diagnostic logging
   SELECT string_agg(date::text, ', ') INTO v_existing_dates
@@ -91,8 +93,8 @@ BEGIN
 
   IF v_row_exists THEN
     -- Prioritize today's IST match and active status
-    SELECT dds.is_active, dds.max_patients, s.name 
-    INTO v_is_active, v_max_patients, v_doctor_name
+    SELECT dds.is_active, dds.max_patients, s.name, dds.start_time 
+    INTO v_is_active, v_max_patients, v_doctor_name, v_start_time
     FROM public.doctor_daily_settings dds
     LEFT JOIN public.staff s ON s.id = dds.doctor_id
     WHERE dds.clinic_id = p_clinic_id
@@ -127,9 +129,16 @@ BEGIN
     );
   END IF;
 
+  -- Format starting time for patient response
+  IF v_start_time IS NOT NULL THEN
+    v_formatted_start := to_char(v_start_time, 'HH12:MI AM');
+  ELSE
+    v_formatted_start := 'their scheduled shift';
+  END IF;
+
   RETURN jsonb_build_object(
     'available', true,
-    'message', 'Yes, Dr. ' || COALESCE(v_doctor_name, 'the doctor') || ' is available today for walk-in patients.'
+    'message', 'Yes, Dr. ' || COALESCE(v_doctor_name, 'the doctor') || ' is available today starting at ' || v_formatted_start || '.'
   );
 END;
 $$;
