@@ -234,7 +234,12 @@ async def book_appointment(request: Request, background_tasks: BackgroundTasks):
         background_tasks.add_task(send_sms, phone, msg)
         background_tasks.add_task(send_whatsapp, phone, msg)
 
-        return {"message": f"Appointment booked successfully! The token number is {token} and their estimated turn is at {est_time_str}. Tell the patient their token number is {token} and their estimated time is {est_time_str}."}
+        return {
+            "token": token,
+            "phone_number": phone,
+            "estimated_time": est_time_str,
+            "message": f"Appointment booked successfully! Token number is {token}, confirmed phone number is {phone}, estimated turn time is {est_time_str}. Please tell the patient: 'All done! Your booking is confirmed on {phone}. Your token number is {token} and your estimated time is {est_time_str}. Thank you!'"
+        }
 
     except Exception as e:
         logger.error(f"❌ book_appointment error: {e}")
