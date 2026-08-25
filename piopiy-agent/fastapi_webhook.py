@@ -236,8 +236,13 @@ async def book_appointment(request: Request, background_tasks: BackgroundTasks):
 
         return {
             "token": token,
+            "Token": token,
+            "name": patient_name,
+            "Name": patient_name,
             "phone_number": phone,
+            "Phone": phone,
             "estimated_time": est_time_str,
+            "EstTime": est_time_str,
             "message": f"Appointment booked successfully! Token number is {token}, confirmed phone number is {phone}, estimated turn time is {est_time_str}. Please tell the patient: 'All done! Your booking is confirmed on {phone}. Your token number is {token} and your estimated time is {est_time_str}. Thank you!'"
         }
 
