@@ -189,18 +189,50 @@ async def book_appointment(request: Request, background_tasks: BackgroundTasks):
 
         clinic_id = CLINIC_ID
 
-        # Resolve today's active doctor_id bypassing RLS
+        # Resolve doctor_id bypassing RLS
         doctor_id = None
-        try:
-            doc_res = await run_db(
-                lambda: supabase.rpc('get_active_doctor_id', {
-                    'p_clinic_id': clinic_id
-                }).execute()
-            )
-            doctor_id = doc_res.data if doc_res else None
-            logger.info(f"🔍 Resolved active doctor for booking: {doctor_id}")
-        except Exception as doc_err:
-            logger.error(f"⚠️ Error resolving active doctor: {doc_err}")
+        doctor_name = data.get("doctor_name", "")
+        resolved_doc_name = "the doctor"
+
+        if doctor_name:
+            try:
+                doc_res = await run_db(
+                    lambda: supabase.rpc('get_doctor_id_by_name', {
+                        'p_clinic_id': clinic_id,
+                        'p_doctor_name': doctor_name
+                    }).execute()
+                )
+                doctor_id = doc_res.data if doc_res else None
+                if doctor_id:
+                    logger.info(f"🔍 Resolved requested doctor '{doctor_name}' to ID: {doctor_id}")
+            except Exception as err:
+                logger.error(f"⚠️ Error resolving doctor by name '{doctor_name}': {err}")
+
+        # Fallback to active doctor on duty today if name was empty or not matched
+        if not doctor_id:
+            try:
+                doc_res = await run_db(
+                    lambda: supabase.rpc('get_active_doctor_id', {
+                        'p_clinic_id': clinic_id
+                    }).execute()
+                )
+                doctor_id = doc_res.data if doc_res else None
+                logger.info(f"🔍 Resolved active doctor fallback: {doctor_id}")
+            except Exception as doc_err:
+                logger.error(f"⚠️ Error resolving active doctor fallback: {doc_err}")
+
+        # Fetch actual doctor name for confirmation messages
+        if doctor_id:
+            try:
+                staff_res = await run_db(
+                    lambda: supabase.table('staff').select('name').eq('id', doctor_id).execute()
+                )
+                if staff_res and staff_res.data:
+                    resolved_doc_name = "Dr. " + staff_res.data[0]['name']
+            except Exception as name_err:
+                logger.error(f"⚠️ Error fetching doctor name for messages: {name_err}")
+                if doctor_name:
+                    resolved_doc_name = f"Dr. {doctor_name}"
 
         # Call the RPC to properly generate a token with clean parameters
         rpc_params = {
@@ -216,7 +248,7 @@ async def book_appointment(request: Request, background_tasks: BackgroundTasks):
             lambda: supabase.rpc('generate_daily_token', rpc_params).execute()
         )
         token = rpc_res.data if rpc_res else "1"
-        logger.info(f"✅ Token generated: {token} for {patient_name} ({phone})")
+        logger.info(f"✅ Token generated: {token} for {patient_name} ({phone}) under {resolved_doc_name}")
 
         # Programmatically calculate estimated wait time based on token number (10 minutes average per patient)
         ist = timezone(timedelta(hours=5, minutes=30))
@@ -230,7 +262,7 @@ async def book_appointment(request: Request, background_tasks: BackgroundTasks):
         est_time_str = est_time_dt.strftime('%I:%M %p')
 
         # --- SEND SMS AND WHATSAPP (offloaded to background task for instant call reply) ---
-        msg = f"Hello {patient_name}, your appointment is confirmed! Your token number is {token}. Estimated turn: {est_time_str}."
+        msg = f"Hello {patient_name}, your appointment with {resolved_doc_name} is confirmed! Your token number is {token}. Estimated turn: {est_time_str}."
         background_tasks.add_task(send_sms, phone, msg)
         background_tasks.add_task(send_whatsapp, phone, msg)
 
@@ -243,7 +275,9 @@ async def book_appointment(request: Request, background_tasks: BackgroundTasks):
             "Phone": phone,
             "estimated_time": est_time_str,
             "EstTime": est_time_str,
-            "message": f"Appointment booked successfully! Token number is {token}, confirmed phone number is {phone}, estimated turn time is {est_time_str}. Please tell the patient: 'All done! Your booking is confirmed on {phone}. Your token number is {token} and your estimated time is {est_time_str}. Thank you!'"
+            "doctor_name": resolved_doc_name,
+            "DoctorName": resolved_doc_name,
+            "message": f"Appointment booked successfully! Token number is {token}, confirmed phone number is {phone}, estimated turn time is {est_time_str} with {resolved_doc_name}. Please tell the patient: 'All done! Your booking is confirmed on {phone} with {resolved_doc_name}. Your token number is {token} and your estimated time is {est_time_str}. Thank you!'"
         }
 
     except Exception as e:
