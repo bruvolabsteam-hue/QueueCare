@@ -81,6 +81,14 @@ def normalize_indian_carrier_phone(phone: str) -> str:
     return digits
 
 
+def resolve_clinic_id(data: dict, query_params: dict) -> str:
+    """Dynamically extract clinic_id from request body, query parameters, or default fallback."""
+    cid = data.get("clinic_id") or query_params.get("clinic_id")
+    if cid:
+        return str(cid).strip()
+    return CLINIC_ID
+
+
 async def run_db(func, *args, **kwargs):
     """Execute synchronous database calls off the main event loop for sub-second non-blocking performance."""
     return await asyncio.to_thread(func, *args, **kwargs)
@@ -135,7 +143,15 @@ async def diagnose():
 async def check_availability(request: Request):
     """Check if the doctor has availability today."""
     try:
-        logger.info("📞 check_availability called")
+        # Try to parse request body and query params
+        data = {}
+        try:
+            data = await request.json()
+        except Exception:
+            pass
+        query_params = dict(request.query_params)
+        clinic_id = resolve_clinic_id(data, query_params)
+        logger.info(f"📞 check_availability called for clinic_id: {clinic_id}")
 
         if not supabase:
             return {"message": "Doctor is available today for walk-in patients."}
@@ -143,7 +159,7 @@ async def check_availability(request: Request):
         # Call RPC function to check doctor availability bypassing RLS safely
         rpc_res = await run_db(
             lambda: supabase.rpc('check_doctor_availability', {
-                'p_clinic_id': CLINIC_ID
+                'p_clinic_id': clinic_id
             }).execute()
         )
 
@@ -187,7 +203,9 @@ async def book_appointment(request: Request, background_tasks: BackgroundTasks):
         if not supabase:
             return {"message": f"Appointment booked for {patient_name}. Please visit the clinic."}
 
-        clinic_id = CLINIC_ID
+        query_params = dict(request.query_params)
+        clinic_id = resolve_clinic_id(data, query_params)
+        logger.info(f"🔍 Booking appointment resolved to clinic_id: {clinic_id}")
 
         # Resolve doctor_id bypassing RLS
         doctor_id = None
@@ -337,13 +355,17 @@ async def cancel_appointment(request: Request):
 
         phone = str(phone_number).strip()
 
+        query_params = dict(request.query_params)
+        clinic_id = resolve_clinic_id(data, query_params)
+        logger.info(f"🔍 Cancel appointment resolved to clinic_id: {clinic_id}")
+
         if not supabase:
             return {"message": "Appointment cancelled successfully."}
 
         # Invoke SECURITY DEFINER RPC cancel_appointment
         rpc_res = await run_db(
             lambda: supabase.rpc('cancel_appointment', {
-                'p_clinic_id': CLINIC_ID,
+                'p_clinic_id': clinic_id,
                 'p_phone': phone
             }).execute()
         )
@@ -393,6 +415,10 @@ async def transfer_to_doctor(request: Request):
         call_id = request.query_params.get("call_id") or data.get("call_id", "")
         doctor_name = data.get("doctor_name", "")
 
+        query_params = dict(request.query_params)
+        clinic_id = resolve_clinic_id(data, query_params)
+        logger.info(f"🔍 Transfer call resolved to clinic_id: {clinic_id}")
+
         if not supabase:
             return {
                 "doctor_phone": "",
@@ -402,7 +428,7 @@ async def transfer_to_doctor(request: Request):
         # Check availability first - block transfer if doctor is off/fully booked
         avail_res = await run_db(
             lambda: supabase.rpc('check_doctor_availability', {
-                'p_clinic_id': CLINIC_ID
+                'p_clinic_id': clinic_id
             }).execute()
         )
 
@@ -426,7 +452,7 @@ async def transfer_to_doctor(request: Request):
         if doctor_name:
             rpc_res = await run_db(
                 lambda: supabase.rpc('get_doctor_phone', {
-                    'p_clinic_id': CLINIC_ID,
+                    'p_clinic_id': clinic_id,
                     'p_doctor_name': doctor_name
                 }).execute()
             )
@@ -438,7 +464,7 @@ async def transfer_to_doctor(request: Request):
             try:
                 active_res = await run_db(
                     lambda: supabase.rpc('get_active_doctor_details', {
-                        'p_clinic_id': CLINIC_ID
+                        'p_clinic_id': clinic_id
                     }).execute()
                 )
                 active_data = active_res.data if active_res else {}
@@ -471,7 +497,7 @@ async def transfer_to_doctor(request: Request):
             try:
                 await run_db(
                     lambda: supabase.rpc('log_transfer_request', {
-                        'p_clinic_id': CLINIC_ID,
+                        'p_clinic_id': clinic_id,
                         'p_doctor_name': log_doc_name,
                         'p_caller_phone': caller_phone_clean
                     }).execute()
