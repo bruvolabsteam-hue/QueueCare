@@ -37,6 +37,7 @@ BEGIN
 
   RETURN jsonb_build_object(
     'available', true,
+    'doctor_list', v_doctors_list,
     'message', 'Yes, the following doctors are available today: ' || v_doctors_list || '. Whom would you like to book an appointment with?'
   );
 END;

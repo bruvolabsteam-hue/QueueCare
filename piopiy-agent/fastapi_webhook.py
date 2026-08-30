@@ -165,7 +165,12 @@ async def check_availability(request: Request):
 
         res_data = rpc_res.data if rpc_res else None
         if res_data and isinstance(res_data, dict):
-            return {"message": res_data.get("message", "Yes, the doctor is available today.")}
+            doc_list = res_data.get("doctor_list", "")
+            return {
+                "message": res_data.get("message", "Yes, the doctor is available today."),
+                "doctor_list": doc_list,
+                "DoctorList": doc_list
+            }
 
         return {"message": "Yes, the doctor is available today for walk-in patients."}
 
