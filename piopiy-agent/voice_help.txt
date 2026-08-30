@@ -1,0 +1,34 @@
+Help on class VoiceAgent in module piopiy.voice_agent:
+
+class VoiceAgent(builtins.object)
+ |  VoiceAgent(*, instructions: 'str', tools: 'Optional[List[FunctionSchema]]' = None, greeting: 'Optional[str]' = None, idle_timeout_secs: 'int' = 60) -> 'None'
+ |
+ |  Methods defined here:
+ |
+ |  async Action(self, *, stt: 'Optional[FrameProcessor]' = None, llm: 'FrameProcessor', tts: 'Optional[FrameProcessor]' = None, tts_switcher: 'Optional[ServiceSwitcher]' = None, stt_switcher: 'Optional[ServiceSwitcher]' = None, mcp_tools: 'Optional[Any]' = None, vad: 'Optional[Any]' = None, enable_metrics: 'bool' = True, enable_usage_metrics: 'bool' = True, allow_interruptions: 'bool' = True, interruption_strategy: 'Optional[BaseInterruptionStrategy]' = None, telecmi_params: 'Optional[TelecmiParams]' = None) -> 'None'
+ |      Store components and toggles; pipeline is built in start().
+ |
+ |  __init__(self, *, instructions: 'str', tools: 'Optional[List[FunctionSchema]]' = None, greeting: 'Optional[str]' = None, idle_timeout_secs: 'int' = 60) -> 'None'
+ |      Initialize self.  See help(type(self)) for accurate signature.
+ |
+ |  add_tool(self, schema: 'FunctionSchema', handler: 'Callable[..., Awaitable[Any]]') -> 'None'
+ |      # ---- Tool APIs ----
+ |
+ |  register_tool(self, name: 'str', handler: 'Callable[..., Awaitable[Any]]') -> 'None'
+ |
+ |  async start(self) -> 'None'
+ |
+ |  async switch_service(self, service: 'FrameProcessor') -> 'None'
+ |      Switch the current service to the provided processor.
+ |
+ |      This is typically used to switch TTS or STT providers dynamically.
+ |
+ |  ----------------------------------------------------------------------
+ |  Data descriptors defined here:
+ |
+ |  __dict__
+ |      dictionary for instance variables
+ |
+ |  __weakref__
+ |      list of weak references to the object
+
