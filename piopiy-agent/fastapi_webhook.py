@@ -34,7 +34,7 @@ else:
     supabase = None
     logger.error("❌ SUPABASE_URL or SUPABASE key not set!")
 
-CLINIC_ID = os.environ.get("CLINIC_ID", "a03c3eed-c075-496c-9c03-4c95eac40975")
+CLINIC_ID = os.environ.get("CLINIC_ID", "ffe805a9-c7bb-41ec-a88e-01ebae6331f8")
 
 
 def normalize_indian_carrier_phone(phone: str) -> str:
