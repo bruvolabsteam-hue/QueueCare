@@ -250,15 +250,50 @@ async def book_appointment(request: Request, background_tasks: BackgroundTasks):
         token = rpc_res.data if rpc_res else "1"
         logger.info(f"✅ Token generated: {token} for {patient_name} ({phone}) under {resolved_doc_name}")
 
-        # Programmatically calculate estimated wait time based on token number (10 minutes average per patient)
+        # Programmatically calculate estimated wait time based on token number and doctor's start time
         ist = timezone(timedelta(hours=5, minutes=30))
+        now_ist = datetime.now(ist)
+        
+        start_time = None
+        time_per_patient = 10  # default
+        
+        if doctor_id:
+            try:
+                settings_res = await run_db(
+                    lambda: supabase.table('doctor_daily_settings')
+                    .select('start_time', 'time_per_patient_mins')
+                    .eq('doctor_id', doctor_id)
+                    .eq('date', now_ist.date())
+                    .execute()
+                )
+                if settings_res and settings_res.data:
+                    raw_start = settings_res.data[0].get('start_time')
+                    time_per_patient = settings_res.data[0].get('time_per_patient_mins') or 10
+                    if raw_start:
+                        parts = raw_start.split(':')
+                        start_time = now_ist.replace(
+                            hour=int(parts[0]),
+                            minute=int(parts[1]),
+                            second=0,
+                            microsecond=0
+                        )
+                        logger.info(f"🔍 Doctor start_time parsed: {start_time}, patient duration: {time_per_patient} mins")
+            except Exception as settings_err:
+                logger.error(f"⚠️ Error fetching doctor daily settings: {settings_err}")
+
+        # Base time anchor is either current time or scheduled start time, whichever is later
+        base_time = now_ist
+        if start_time and start_time > now_ist:
+            base_time = start_time
+            logger.info(f"⏳ Future doctor start time detected. Using {base_time} as base calculation time.")
+
         token_num = 1
         try:
             token_num = int(token)
         except Exception:
             pass
-        est_wait = max(0, (token_num - 1) * 10)  # Patients ahead * 10 mins
-        est_time_dt = datetime.now(ist) + timedelta(minutes=est_wait)
+        est_wait = max(0, (token_num - 1) * time_per_patient)  # Patients ahead * time per patient
+        est_time_dt = base_time + timedelta(minutes=est_wait)
         est_time_str = est_time_dt.strftime('%I:%M %p')
 
         # --- SEND SMS AND WHATSAPP (offloaded to background task for instant call reply) ---
