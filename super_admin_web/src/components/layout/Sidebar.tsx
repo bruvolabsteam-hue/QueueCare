@@ -22,36 +22,46 @@ export default function Sidebar() {
   return (
     <div className="flex h-full w-64 flex-col glass-panel border-r border-slate-200/50 dark:border-slate-800/50">
       <div className="flex h-16 items-center px-6 border-b border-slate-200/50 dark:border-slate-800/50">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-blue-500 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">B</span>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#38B6FF] to-blue-600 flex items-center justify-center shadow-sm">
+            <span style={{ fontFamily: 'var(--font-bruvo)' }} className="text-white font-bold text-lg">B</span>
           </div>
-          <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-blue-600 dark:from-teal-400 dark:to-blue-400">
-            BruvoLabs Admin
-          </span>
+          <div className="flex items-baseline select-none">
+            <span style={{ fontFamily: 'var(--font-bruvo)', fontWeight: 700 }} className="text-xl tracking-tight text-slate-900 dark:text-white">
+              Bruvo
+            </span>
+            <span style={{ fontFamily: 'var(--font-flow)', fontWeight: 400, color: '#38B6FF' }} className="text-xl tracking-tight">
+              Flow
+            </span>
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 ml-1.5 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 tracking-wider uppercase">
+              Admin
+            </span>
+          </div>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto py-4">
-        <nav className="flex-1 space-y-1 px-4">
+        <nav className="flex-1 space-y-1.5 px-4">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             return (
               <a
                 key={item.name}
                 href={item.href}
-                className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${
+                className={`group flex items-center px-3.5 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 transform hover:translate-x-1.5 active:scale-[0.98] ${
                   isActive
-                    ? "bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 shadow-sm"
+                    ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 shadow-sm border-l-4 border-[#38B6FF]"
                     : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200"
                 }`}
               >
                 <item.icon
-                  className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors ${
-                    isActive ? "text-teal-600 dark:text-teal-400" : "text-slate-400 group-hover:text-slate-500 dark:group-hover:text-slate-300"
+                  className={`mr-3 h-5 w-5 flex-shrink-0 transition-all duration-200 group-hover:scale-110 ${
+                    isActive ? "text-[#38B6FF]" : "text-slate-400 group-hover:text-[#38B6FF]"
                   }`}
                   aria-hidden="true"
                 />
-                {item.name}
+                <span className="transition-transform duration-200 group-hover:translate-x-0.5">
+                  {item.name}
+                </span>
               </a>
             );
           })}
@@ -64,7 +74,7 @@ export default function Sidebar() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-medium text-slate-900 dark:text-white">Super Admin</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">admin@bruvolabs.ai</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">admin@bruvoflow.com</span>
           </div>
         </div>
       </div>

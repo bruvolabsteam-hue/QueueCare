@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BruvoLabs AI | Super Admin",
-  description: "Super Admin Dashboard for BruvoLabs AI",
+  title: "BruvoFlow | Super Admin",
+  description: "Super Admin Dashboard for BruvoFlow",
 };
 
 import { AuthProvider } from "@/context/AuthContext";

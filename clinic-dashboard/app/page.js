@@ -112,7 +112,11 @@ export default function Login() {
           </svg>
         </div>
 
-        <h1 className={styles.title}>BruvoLabs Clinic</h1>
+        <h1 className={styles.title}>
+          <span style={{ fontFamily: 'var(--font-bruvo)', fontWeight: 700, color: 'var(--color-text-primary)' }}>Bruvo</span>
+          <span style={{ fontFamily: 'var(--font-flow)', fontWeight: 400, color: '#38B6FF' }}>Flow</span>
+          <span style={{ fontWeight: 600, fontSize: '1.35rem', opacity: 0.85, marginLeft: '0.45rem', color: 'var(--color-text-secondary)' }}>Clinic</span>
+        </h1>
         <p className={styles.subtitle}>
           {isSignUp ? 'Create your Clinic Workspace' : 'Sign in to your Clinic Dashboard'}
         </p>

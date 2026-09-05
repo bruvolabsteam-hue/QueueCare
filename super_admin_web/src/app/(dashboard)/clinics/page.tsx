@@ -190,11 +190,11 @@ export default function ClinicsPage() {
             <form onSubmit={handleAddClinic} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Clinic Name</label>
-                <input required type="text" value={newClinic.name} onChange={e => setNewClinic({...newClinic, name: e.target.value})} className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500" placeholder="BruvoLabs Central" />
+                <input required type="text" value={newClinic.name} onChange={e => setNewClinic({...newClinic, name: e.target.value})} className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500" placeholder="BruvoFlow Central" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Email</label>
-                <input required type="email" value={newClinic.email} onChange={e => setNewClinic({...newClinic, email: e.target.value})} className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500" placeholder="contact@bruvolabs.com" />
+                <input required type="email" value={newClinic.email} onChange={e => setNewClinic({...newClinic, email: e.target.value})} className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500" placeholder="contact@bruvoflow.com" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Phone</label>

@@ -1,3 +1,5 @@
+@import url('https://fonts.cdnfonts.com/css/glacial-indifference');
+@import url('https://fonts.cdnfonts.com/css/codec-pro');
 @import "tailwindcss";
 
 @theme {
@@ -14,6 +16,10 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+  --font-bruvo: 'Glacial Indifference', 'Montserrat', -apple-system, sans-serif;
+  --font-flow: 'Codec Pro', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --color-brand-primary: #38B6FF;
+  --color-brand-cream: #FCF4E7;
 }
 
 @media (prefers-color-scheme: dark) {

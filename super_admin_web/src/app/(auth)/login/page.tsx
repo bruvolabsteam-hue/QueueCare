@@ -36,14 +36,16 @@ export default function Login() {
 
       <div className="w-full max-w-md z-10 px-4 sm:px-0 animate-in fade-in zoom-in-95 duration-700">
         <div className="glass-panel rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-400 to-blue-500"></div>
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#38B6FF] to-blue-600"></div>
           
           <div className="text-center mb-8">
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center shadow-lg mb-6">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-[#38B6FF] to-blue-600 flex items-center justify-center shadow-lg mb-6">
               <Bot className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">
-              BruvoLabs Platform
+            <h2 className="text-3xl font-bold tracking-tight mb-2 select-none">
+              <span style={{ fontFamily: 'var(--font-bruvo)', fontWeight: 700 }} className="text-slate-900 dark:text-white">Bruvo</span>
+              <span style={{ fontFamily: 'var(--font-flow)', fontWeight: 400, color: '#38B6FF' }}>Flow</span>
+              <span className="text-2xl font-medium text-slate-500 dark:text-slate-400 ml-2">Admin</span>
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Login to the Super Admin Dashboard

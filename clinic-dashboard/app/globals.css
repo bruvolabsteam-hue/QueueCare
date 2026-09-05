@@ -1,17 +1,27 @@
+@import url('https://fonts.cdnfonts.com/css/glacial-indifference');
+@import url('https://fonts.cdnfonts.com/css/codec-pro');
+
 :root {
-  --color-background: #f8f9fa;
+  /* User-Specified Theme Palette */
+  --color-background: #FCF4E7; /* Warm creamy white */
   --color-surface: #ffffff;
-  --color-text-primary: #1e293b;
-  --color-text-secondary: #64748b;
-  --color-border: #e2e8f0;
+  --color-surface-cream: #FCF4E7;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-border: #ebdcc9; /* Subtle warm border */
   
-  --color-brand-start: #06b6d4; /* cyan */
-  --color-brand-end: #3b82f6; /* blue */
+  --color-brand-primary: #38B6FF; /* User-specified primary blue */
+  --color-brand-start: #38B6FF;
+  --color-brand-end: #0284c7;
+  --color-brand-cream: #FCF4E7;
   
   --color-error-bg: #fef2f2;
   --color-error-text: #dc2626;
 
+  /* Typography */
   --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-bruvo: 'Glacial Indifference', 'Montserrat', -apple-system, sans-serif;
+  --font-flow: 'Codec Pro', 'Plus Jakarta Sans', -apple-system, sans-serif;
 }
 
 * {
@@ -28,6 +38,27 @@ body {
 }
 
 a {
-  color: var(--color-brand-end);
+  color: var(--color-brand-primary);
   text-decoration: none;
+}
+
+/* Global Brand Logo Utility Classes */
+.brandLogo {
+  display: inline-flex;
+  align-items: baseline;
+  user-select: none;
+}
+
+.brandBruvo {
+  font-family: var(--font-bruvo);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.brandFlow {
+  font-family: var(--font-flow);
+  font-weight: 400;
+  color: var(--color-brand-primary);
+  letter-spacing: -0.01em;
 }
