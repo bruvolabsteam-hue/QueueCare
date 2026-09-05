@@ -89,6 +89,43 @@ def resolve_clinic_id(data: dict, query_params: dict) -> str:
     return CLINIC_ID
 
 
+def parse_target_date(raw_date: str) -> str:
+    """Parse date string (ISO YYYY-MM-DD or relative like 'today', 'tomorrow', day names) in IST."""
+    if not raw_date:
+        return None
+
+    raw_clean = str(raw_date).strip().lower()
+    ist = timezone(timedelta(hours=5, minutes=30))
+    now_ist = datetime.now(ist)
+
+    if raw_clean in ["today", "now"]:
+        return now_ist.strftime("%Y-%m-%d")
+    if raw_clean == "tomorrow":
+        return (now_ist + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    weekdays = {
+        "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
+        "friday": 4, "saturday": 5, "sunday": 6
+    }
+    for day_name, day_idx in weekdays.items():
+        if day_name in raw_clean:
+            current_day = now_ist.weekday()
+            days_ahead = (day_idx - current_day) % 7
+            if days_ahead == 0:
+                days_ahead = 7  # next occurrence of that weekday
+            return (now_ist + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+
+    # Try parsing standard date formats
+    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d", "%d %B %Y", "%B %d, %Y"):
+        try:
+            parsed = datetime.strptime(raw_clean, fmt)
+            return parsed.strftime("%Y-%m-%d")
+        except ValueError:
+            pass
+
+    return raw_clean
+
+
 async def run_db(func, *args, **kwargs):
     """Execute synchronous database calls off the main event loop for sub-second non-blocking performance."""
     return await asyncio.to_thread(func, *args, **kwargs)
@@ -141,7 +178,7 @@ async def diagnose():
 # ──────────────────────────────────────────────
 @app.post("/check_availability")
 async def check_availability(request: Request):
-    """Check if the doctor has availability today."""
+    """Check doctor availability and leaves for today or any specific calendar date."""
     try:
         # Try to parse request body and query params
         data = {}
@@ -151,31 +188,63 @@ async def check_availability(request: Request):
             pass
         query_params = dict(request.query_params)
         clinic_id = resolve_clinic_id(data, query_params)
-        logger.info(f"📞 check_availability called for clinic_id: {clinic_id}")
+
+        # Extract optional date and doctor_name
+        raw_date = data.get("date") or query_params.get("date")
+        parsed_date = parse_target_date(raw_date)
+
+        doctor_name = data.get("doctor_name") or query_params.get("doctor_name") or ""
+        if doctor_name:
+            doctor_name = str(doctor_name).strip()
+
+        logger.info(f"📞 check_availability called for clinic_id: {clinic_id}, date: {parsed_date}, doctor: {doctor_name}")
 
         if not supabase:
             return {"message": "Doctor is available today for walk-in patients."}
 
-        # Call RPC function to check doctor availability bypassing RLS safely
+        # Call upgraded RPC function to check doctor availability & leaves bypassing RLS safely
+        rpc_params = {
+            'p_clinic_id': clinic_id,
+            'p_date': parsed_date,
+            'p_doctor_name': doctor_name if doctor_name else None
+        }
+
         rpc_res = await run_db(
-            lambda: supabase.rpc('check_doctor_availability', {
-                'p_clinic_id': clinic_id
-            }).execute()
+            lambda: supabase.rpc('check_doctor_availability', rpc_params).execute()
         )
 
         res_data = rpc_res.data if rpc_res else None
         if res_data and isinstance(res_data, dict):
             doc_list = res_data.get("doctor_list", "")
+            leaves_list = res_data.get("leaves_list", "")
+            is_available = res_data.get("available", True)
+            is_leave = res_data.get("is_leave", False)
+            msg = res_data.get("message", "Yes, the doctor is available.")
+
             return {
-                "message": res_data.get("message", "Yes, the doctor is available today."),
+                "available": is_available,
+                "is_leave": is_leave,
+                "message": msg,
                 "doctor_list": doc_list,
-                "DoctorList": doc_list
+                "DoctorList": doc_list,
+                "leaves_list": leaves_list,
+                "LeavesList": leaves_list,
+                "date": parsed_date or datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y-%m-%d')
             }
 
         return {"message": "Yes, the doctor is available today for walk-in patients."}
 
     except Exception as e:
         logger.error(f"❌ check_availability error: {e}")
+        # Fallback to single clinic_id parameter if database migration is still pending
+        try:
+            fallback_res = await run_db(
+                lambda: supabase.rpc('check_doctor_availability', {'p_clinic_id': clinic_id}).execute()
+            )
+            if fallback_res and fallback_res.data:
+                return fallback_res.data
+        except Exception:
+            pass
         return {"message": "Yes, the doctor is available today."}
 
 
