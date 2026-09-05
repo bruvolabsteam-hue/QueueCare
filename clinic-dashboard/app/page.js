@@ -169,7 +169,7 @@ export default function Login() {
                   cursor: 'pointer',
                   color: 'var(--color-text-secondary)',
                   display: 'flex',
-                  align-items: 'center',
+                  alignItems: 'center',
                   padding: 0
                 }}
               >
