@@ -68,22 +68,22 @@ function GlobalAddPatientModal({ doctors, clinicId, onClose, onSuccess }) {
   };
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
-      <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '16px', width: '100%', maxWidth: '440px', boxShadow: '0 25px 60px rgba(0,0,0,0.25)' }}>
-        <h2 style={{ marginTop: 0, marginBottom: '0.25rem', fontSize: '20px', fontWeight: '800', color: '#111827' }}>Add New Patient</h2>
-        <p style={{ margin: '0 0 1.5rem', color: '#6b7280', fontSize: '13px' }}>Select a doctor and enter the patient details.</p>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
+      <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '20px', width: '100%', maxWidth: '440px', boxShadow: '0 25px 60px rgba(15, 23, 42, 0.25)', border: '1px solid #ebdcc9' }}>
+        <h2 style={{ marginTop: 0, marginBottom: '0.25rem', fontSize: '20px', fontWeight: '800', color: '#0f172a' }}>Add New Patient</h2>
+        <p style={{ margin: '0 0 1.5rem', color: '#64748b', fontSize: '13px' }}>Select a doctor and enter the patient details.</p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Doctor Selector */}
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px', color: '#374151' }}>Assign to Doctor</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '8px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px', color: '#334155' }}>Assign to Doctor</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto', border: '1px solid #ebdcc9', borderRadius: '12px', padding: '8px', background: 'rgba(252, 244, 231, 0.3)' }}>
               {doctors.map(doc => (
                 <label key={doc.id} style={{
                   display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px',
                   borderRadius: '8px', cursor: 'pointer',
-                  background: selectedDoctorId === doc.id ? '#eff6ff' : 'transparent',
-                  border: selectedDoctorId === doc.id ? '2px solid #2563eb' : '2px solid transparent',
+                  background: selectedDoctorId === doc.id ? 'rgba(56, 182, 255, 0.1)' : 'white',
+                  border: selectedDoctorId === doc.id ? '2px solid #38B6FF' : '1px solid #e2e8f0',
                   transition: 'all 0.15s'
                 }}>
                   <input
@@ -92,16 +92,17 @@ function GlobalAddPatientModal({ doctors, clinicId, onClose, onSuccess }) {
                     value={doc.id}
                     checked={selectedDoctorId === doc.id}
                     onChange={() => setSelectedDoctorId(doc.id)}
-                    style={{ accentColor: '#2563eb' }}
+                    style={{ accentColor: '#0284c7' }}
                   />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '700', fontSize: '14px', color: '#111827' }}>{doc.name}</div>
-                    {doc.timeRange && <div style={{ fontSize: '11px', color: '#6b7280' }}>🕐 {doc.timeRange}</div>}
+                    <div style={{ fontWeight: '700', fontSize: '14px', color: '#0f172a' }}>{doc.name}</div>
+                    {doc.timeRange && <div style={{ fontSize: '11px', color: '#64748b' }}>🕐 {doc.timeRange}</div>}
                   </div>
                   <span style={{
                     fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '99px',
-                    background: doc.isOffline ? '#fef3c7' : '#d1fae5',
-                    color: doc.isOffline ? '#92400e' : '#065f46'
+                    background: doc.isOffline ? '#fef3c7' : '#ecfdf5',
+                    color: doc.isOffline ? '#b45309' : '#047857',
+                    border: `1px solid ${doc.isOffline ? '#fde68a' : '#a7f3d0'}`
                   }}>
                     {doc.isOffline ? 'Offline' : 'Active'}
                   </span>
@@ -119,29 +120,29 @@ function GlobalAddPatientModal({ doctors, clinicId, onClose, onSuccess }) {
 
           {/* Patient Name */}
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px', color: '#374151' }}>Patient Name</label>
+            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px', color: '#334155' }}>Patient Name</label>
             <input
               type="text" required value={name} onChange={e => setName(e.target.value)}
               placeholder="e.g. John Kumar"
-              style={{ width: '100%', padding: '11px 14px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', outline: 'none' }}
+              style={{ width: '100%', padding: '11px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', outline: 'none' }}
             />
           </div>
 
           {/* Phone */}
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px', color: '#374151' }}>Phone Number</label>
+            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px', color: '#334155' }}>Phone Number</label>
             <input
               type="tel" required value={phone} onChange={e => setPhone(e.target.value)}
               placeholder="e.g. 9876543210"
-              style={{ width: '100%', padding: '11px 14px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', outline: 'none' }}
+              style={{ width: '100%', padding: '11px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', outline: 'none' }}
             />
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-            <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', background: '#f3f4f6', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}>
+            <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', background: '#f1f5f9', border: 'none', borderRadius: '8px', fontWeight: '600', color: '#475569', cursor: 'pointer', fontSize: '14px' }}>
               Cancel
             </button>
-            <button type="submit" disabled={isAdding || !selectedDoctorId} style={{ flex: 2, padding: '12px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '14px', opacity: isAdding ? 0.7 : 1 }}>
+            <button type="submit" disabled={isAdding || !selectedDoctorId} style={{ flex: 2, padding: '12px', background: 'linear-gradient(135deg, #38B6FF 0%, #0284c7 100%)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '14px', opacity: isAdding ? 0.7 : 1, boxShadow: '0 4px 14px rgba(56, 182, 255, 0.35)' }}>
               {isAdding ? 'Generating Token...' : '✓ Generate Token'}
             </button>
           </div>
@@ -361,14 +362,14 @@ export default function LiveQueuePage() {
             onClick={() => setShowGlobalAdd(true)}
             style={{
               display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '11px 20px', background: '#2563eb', color: 'white',
+              padding: '11px 20px', background: 'linear-gradient(135deg, #38B6FF 0%, #0284c7 100%)', color: 'white',
               borderRadius: '10px', border: 'none', fontWeight: '700',
               fontSize: '14px', cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(37,99,235,0.4)',
-              transition: 'transform 0.1s, box-shadow 0.1s'
+              boxShadow: '0 4px 14px rgba(56, 182, 255, 0.4)',
+              transition: 'transform 0.15s, box-shadow 0.15s'
             }}
-            onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(37,99,235,0.45)'; }}
-            onMouseOut={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(37,99,235,0.4)'; }}
+            onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 18px rgba(56, 182, 255, 0.5)'; }}
+            onMouseOut={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(56, 182, 255, 0.4)'; }}
           >
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
             Add Patient
@@ -378,11 +379,11 @@ export default function LiveQueuePage() {
 
       {/* ── Empty State ── */}
       {doctorPanels.length === 0 && (
-        <div style={{ padding: '4rem 2rem', textAlign: 'center', background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', color: '#6b7280' }}>
+        <div style={{ padding: '4rem 2rem', textAlign: 'center', background: 'linear-gradient(135deg, #ffffff 0%, rgba(252, 244, 231, 0.5) 100%)', borderRadius: '16px', border: '1px solid #ebdcc9', color: '#64748b', boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)' }}>
           <div style={{ fontSize: '52px', marginBottom: '1rem' }}>🏥</div>
-          <div style={{ fontWeight: '700', fontSize: '17px', color: '#111827', marginBottom: '6px' }}>No doctors have set up their schedule today.</div>
-          <div style={{ fontSize: '14px' }}>Go to the <strong>Setup</strong> page to configure doctors for today's session.</div>
-          <div style={{ marginTop: '1.5rem', fontSize: '13px', color: '#9ca3af' }}>You can still add a patient using the "+ Add Patient" button above — it will create a panel automatically.</div>
+          <div style={{ fontWeight: '800', fontSize: '18px', color: '#0f172a', marginBottom: '6px' }}>No doctors have set up their schedule today.</div>
+          <div style={{ fontSize: '14px', color: '#64748b' }}>Go to the <strong>Setup</strong> page to configure doctors for today's session.</div>
+          <div style={{ marginTop: '1.5rem', fontSize: '13px', color: '#94a3b8' }}>You can still add a patient using the "+ Add Patient" button above — it will create a panel automatically.</div>
         </div>
       )}
 
@@ -421,34 +422,35 @@ export default function LiveQueuePage() {
       <div style={{ position: 'fixed', bottom: '24px', right: '24px', display: 'flex', flexDirection: 'column', gap: '12px', zIndex: 1000 }}>
         {transferAlerts.map(alert => (
           <div key={alert.id} style={{
-            background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px',
-            padding: '16px', width: '340px', boxShadow: '0 10px 30px rgba(37,99,235,0.18)',
+            background: 'linear-gradient(135deg, #ffffff 0%, rgba(252, 244, 231, 0.85) 100%)',
+            border: '1px solid rgba(56, 182, 255, 0.35)', borderRadius: '14px',
+            padding: '16px', width: '340px', boxShadow: '0 12px 30px rgba(56, 182, 255, 0.15)',
             display: 'flex', flexDirection: 'column', gap: '8px', animation: 'slideIn 0.2s ease',
             boxSizing: 'border-box'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '13px', fontWeight: '800', color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '800', color: '#0284c7', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 📞 Call Transfer Alert
               </span>
               <button 
                 onClick={() => setTransferAlerts(prev => prev.filter(a => a.id !== alert.id))}
-                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: '#9ca3af', padding: 0, lineHeight: 1 }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: '#94a3b8', padding: 0, lineHeight: 1 }}
               >
                 ×
               </button>
             </div>
-            <p style={{ margin: 0, fontSize: '13px', color: '#1f2937', lineHeight: '1.4' }}>
+            <p style={{ margin: 0, fontSize: '13px', color: '#0f172a', lineHeight: '1.4' }}>
               Patient at <strong>{alert.callerPhone}</strong> requested to speak with <strong>{alert.doctorName}</strong>.
             </p>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-              <span style={{ fontSize: '11px', color: '#6b7280' }}>🕐 {alert.time}</span>
+              <span style={{ fontSize: '11px', color: '#64748b' }}>🕐 {alert.time}</span>
               {alert.callerPhone && alert.callerPhone !== 'Unknown Caller' && (
                 <a 
                   href={`tel:${alert.callerPhone}`} 
                   style={{ 
                     fontSize: '12px', fontWeight: '700', color: 'white', 
-                    background: '#2563eb', padding: '5px 10px', borderRadius: '6px', 
-                    textDecoration: 'none', boxShadow: '0 2px 6px rgba(37,99,235,0.3)' 
+                    background: 'linear-gradient(135deg, #38B6FF 0%, #0284c7 100%)', padding: '6px 12px', borderRadius: '6px', 
+                    textDecoration: 'none', boxShadow: '0 2px 8px rgba(56, 182, 255, 0.35)' 
                   }}
                 >
                   Call Back
