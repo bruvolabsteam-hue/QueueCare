@@ -1,17 +1,17 @@
 /* eslint-disable */
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import styles from '../table.module.css'; // Reusing table styles for layout
+import { useClinic } from '../../context/ClinicContext';
+import styles from '../table.module.css';
 import QueueView from '../components/QueueView';
 
 export default function DailySetupPage() {
   const supabase = createClient();
-  const [clinicId, setClinicId] = useState(null);
+  const { clinicId: contextClinicId, staffData: contextStaffData } = useClinic();
   const [doctors, setDoctors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Modal State
+  const [loading, setLoading] = useState(!contextClinicId);
+  const [clinicId, setClinicId] = useState(contextClinicId || null);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [formData, setFormData] = useState({
     max_patients: '',
@@ -24,68 +24,78 @@ export default function DailySetupPage() {
 
   // Queue View State
   const [viewingQueueFor, setViewingQueueFor] = useState(null);
-  const [staffId, setStaffId] = useState(null);
+  const [staffId, setStaffId] = useState(contextStaffData?.id || null);
 
   useEffect(() => {
-    fetchSetupStatus();
-  }, []);
+    if (contextClinicId && contextClinicId !== clinicId) {
+      setClinicId(contextClinicId);
+    }
+    if (contextStaffData?.id && contextStaffData.id !== staffId) {
+      setStaffId(contextStaffData.id);
+    }
+  }, [contextClinicId, contextStaffData]);
 
-  async function fetchSetupStatus() {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+  const fetchSetupStatus = useCallback(async () => {
+    let cid = contextClinicId || clinicId;
+    let sid = contextStaffData?.id || staffId;
 
-    // Get clinic
-    const { data: staffData } = await supabase.from('staff').select('clinic_id, id').eq('email', user.email).single();
-    if (!staffData) return;
-    setClinicId(staffData.clinic_id);
-    setStaffId(staffData.id);
+    if (!cid) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
 
-    // Get all active doctors
-    const { data: activeDocs } = await supabase.from('staff')
-      .select('*')
-      .eq('clinic_id', staffData.clinic_id)
-      .eq('role', 'doctor')
-      .eq('is_active', true)
-      .order('name');
-      
-    if (!activeDocs) return;
+      const { data: sData } = await supabase
+        .from('staff')
+        .select('clinic_id, id')
+        .or(`email.eq.${user.email},id.eq.${user.id}`)
+        .limit(1)
+        .maybeSingle();
+
+      if (!sData?.clinic_id) { setLoading(false); return; }
+      cid = sData.clinic_id;
+      sid = sData.id;
+      setClinicId(cid);
+      setStaffId(sid);
+    }
 
     const today = new Date().toISOString().split('T')[0];
-    
-    let docsWithStatus = [];
-    
-    for (let doc of activeDocs) {
-      // Get today's settings
-      const { data: settings } = await supabase.from('doctor_daily_settings')
-        .select('*')
-        .eq('doctor_id', doc.id)
-        .eq('date', today)
-        .single();
-        
-      // Get yesterday's to prepopulate if needed
-      let pastSettings = null;
-      if (!settings || !settings.setup_confirmed) {
-         const { data: pSettings } = await supabase.from('doctor_daily_settings')
-          .select('*')
-          .eq('doctor_id', doc.id)
-          .order('date', { ascending: false })
-          .limit(1)
-          .single();
-         pastSettings = pSettings;
-      }
 
-      docsWithStatus.push({
+    // Batch query active doctors and settings in parallel
+    const [docsRes, todaySettingsRes, recentSettingsRes] = await Promise.all([
+      supabase.from('staff').select('*').eq('clinic_id', cid).eq('role', 'doctor').eq('is_active', true).order('name'),
+      supabase.from('doctor_daily_settings').select('*').eq('clinic_id', cid).eq('date', today),
+      supabase.from('doctor_daily_settings').select('*').eq('clinic_id', cid).order('date', { ascending: false }).limit(50)
+    ]);
+
+    const activeDocs = docsRes.data || [];
+    const todaySettings = todaySettingsRes.data || [];
+    const recentSettings = recentSettingsRes.data || [];
+
+    const todayMap = {};
+    todaySettings.forEach(s => { todayMap[s.doctor_id] = s; });
+
+    const recentMap = {};
+    recentSettings.forEach(s => {
+      if (!recentMap[s.doctor_id]) recentMap[s.doctor_id] = s;
+    });
+
+    const docsWithStatus = activeDocs.map(doc => {
+      const s = todayMap[doc.id] || null;
+      const past = (!s || !s.setup_confirmed) ? (recentMap[doc.id] || null) : null;
+      return {
         ...doc,
-        today_settings: settings,
-        setup_confirmed: settings?.setup_confirmed || false,
-        past_settings: pastSettings
-      });
-    }
+        today_settings: s,
+        setup_confirmed: s?.setup_confirmed || false,
+        past_settings: past
+      };
+    });
 
     setDoctors(docsWithStatus);
     setLoading(false);
-  }
+  }, [contextClinicId, clinicId, contextStaffData, staffId, supabase]);
+
+  useEffect(() => {
+    fetchSetupStatus();
+  }, [fetchSetupStatus]);
 
   function openSetup(doc) {
     const defaults = doc.today_settings || doc.past_settings || {};
@@ -121,6 +131,7 @@ export default function DailySetupPage() {
       
       setSelectedDoctor(null);
       fetchSetupStatus();
+      if (refreshClinicData) refreshClinicData();
     } catch (err) {
       alert("Error saving: " + err.message);
     } finally {

@@ -1,7 +1,8 @@
 /* eslint-disable */
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { useClinic } from '../../context/ClinicContext';
 
 function formatTime(ts) {
   if (!ts) return '-';
@@ -17,47 +18,57 @@ const STATUS_STYLE = {
 };
 
 export default function PatientsPage() {
-  const [patients, setPatients]         = useState([]);
-  const [doctors, setDoctors]           = useState([]);
+  const { clinicId: contextClinicId, doctors: contextDoctors } = useClinic();
+  const [patients, setPatients] = useState([]);
+  const [doctors, setDoctors] = useState(contextDoctors || []);
   const [selectedDoctor, setSelectedDoctor] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [loading, setLoading]           = useState(true);
-  const [clinicId, setClinicId]         = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [clinicId, setClinicId] = useState(contextClinicId || null);
   const supabase = createClient();
 
   useEffect(() => {
-    async function loadData() {
+    if (contextClinicId && contextClinicId !== clinicId) {
+      setClinicId(contextClinicId);
+    }
+    if (contextDoctors && contextDoctors.length > 0) {
+      setDoctors(contextDoctors);
+    }
+  }, [contextClinicId, contextDoctors]);
+
+  const loadData = useCallback(async () => {
+    let cid = contextClinicId || clinicId;
+    if (!cid) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
       const { data: staffData } = await supabase
-        .from('staff').select('clinic_id').eq('email', user.email).single();
-      if (!staffData?.clinic_id) { setLoading(false); return; }
-
-      setClinicId(staffData.clinic_id);
-
-      const today = new Date().toISOString().split('T')[0];
-
-      // Patients today with doctor name joined
-      const { data, error } = await supabase
-        .from('patients')
-        .select('*, doctor:doctor_id(id, name)')
-        .eq('clinic_id', staffData.clinic_id)
-        .gte('created_at', today + 'T00:00:00')
-        .order('queue_position', { ascending: true });
-
-      if (!error && data) setPatients(data);
-
-      // Doctors list for filter
-      const { data: doctorsData } = await supabase
         .from('staff')
-        .select('id, name')
-        .eq('clinic_id', staffData.clinic_id)
-        .eq('role', 'doctor');
+        .select('clinic_id')
+        .or(`email.eq.${user.email},id.eq.${user.id}`)
+        .limit(1)
+        .maybeSingle();
 
-      setDoctors(doctorsData || []);
-      setLoading(false);
+      if (!staffData?.clinic_id) { setLoading(false); return; }
+      cid = staffData.clinic_id;
+      setClinicId(cid);
     }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // Patients today with doctor name joined
+    const { data, error } = await supabase
+      .from('patients')
+      .select('*, doctor:doctor_id(id, name)')
+      .eq('clinic_id', cid)
+      .gte('created_at', today + 'T00:00:00')
+      .order('queue_position', { ascending: true });
+
+    if (!error && data) setPatients(data);
+    setLoading(false);
+  }, [contextClinicId, clinicId, supabase]);
+
+  useEffect(() => {
     loadData();
 
     // Realtime subscription

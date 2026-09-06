@@ -1,30 +1,41 @@
 /* eslint-disable */
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { useClinic } from '../../context/ClinicContext';
 import styles from '../table.module.css';
 
 export default function SummaryPage() {
   const supabase = createClient();
+  const { clinicId: contextClinicId } = useClinic();
   const [patients, setPatients] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({ total: 0, waiting: 0, done: 0, skipped: 0 });
 
-  async function fetchTodayPatients() {
+  const fetchTodayPatients = useCallback(async () => {
+    let cid = contextClinicId;
+    if (!cid) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: staffData } = await supabase
+        .from('staff')
+        .select('clinic_id')
+        .or(`email.eq.${user.email},id.eq.${user.id}`)
+        .limit(1)
+        .maybeSingle();
+
+      if (!staffData?.clinic_id) return;
+      cid = staffData.clinic_id;
+    }
+
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    // Get clinic
-    const { data: staffData } = await supabase.from('staff').select('clinic_id').eq('email', user.email).single();
-    if (!staffData) return;
-
     const today = new Date().toISOString().split('T')[0];
 
     // Fetch all patients for this clinic today
     const { data } = await supabase.from('patients')
       .select('*, doctor:doctor_id(name)')
-      .eq('clinic_id', staffData.clinic_id)
+      .eq('clinic_id', cid)
       .gte('created_at', `${today}T00:00:00.000Z`)
       .lte('created_at', `${today}T23:59:59.999Z`)
       .order('token_number', { ascending: true });
@@ -41,11 +52,11 @@ export default function SummaryPage() {
     }
     
     setLoading(false);
-  }
+  }, [contextClinicId, supabase]);
 
   useEffect(() => {
     fetchTodayPatients();
-  }, []);
+  }, [fetchTodayPatients]);
 
   return (
     <div>

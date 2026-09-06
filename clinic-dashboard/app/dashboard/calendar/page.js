@@ -3,18 +3,20 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { useClinic } from '../../context/ClinicContext';
 import styles from './calendar.module.css';
 
 export default function CalendarPage() {
   const supabase = createClient();
+  const { clinicId: contextClinicId, doctors: contextDoctors } = useClinic();
 
   // State
-  const [clinicId, setClinicId] = useState(null);
-  const [doctors, setDoctors] = useState([]);
+  const [clinicId, setClinicId] = useState(contextClinicId || null);
+  const [doctors, setDoctors] = useState(contextDoctors || []);
   const [selectedDoctorFilter, setSelectedDoctorFilter] = useState('all');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,10 +35,25 @@ export default function CalendarPage() {
   const [rangeEndDateStr, setRangeEndDateStr] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Initialize
+  // Sync with context
   useEffect(() => {
-    initClinicAndDoctors();
-  }, []);
+    if (contextClinicId && contextClinicId !== clinicId) {
+      setClinicId(contextClinicId);
+    }
+    if (contextDoctors && contextDoctors.length > 0) {
+      setDoctors(contextDoctors);
+      if (!selectedDoctorId) {
+        setSelectedDoctorId(contextDoctors[0].id);
+      }
+    }
+  }, [contextClinicId, contextDoctors]);
+
+  // Initialize fallback if context is still loading
+  useEffect(() => {
+    if (!clinicId) {
+      initClinicAndDoctors();
+    }
+  }, [clinicId]);
 
   // Fetch events whenever month, clinic, or doctor filter changes
   useEffect(() => {
@@ -46,7 +63,6 @@ export default function CalendarPage() {
   }, [clinicId, currentDate, selectedDoctorFilter]);
 
   async function initClinicAndDoctors() {
-    setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -54,8 +70,9 @@ export default function CalendarPage() {
       const { data: staffData } = await supabase
         .from('staff')
         .select('clinic_id')
-        .eq('email', user.email)
-        .single();
+        .or(`email.eq.${user.email},id.eq.${user.id}`)
+        .limit(1)
+        .maybeSingle();
 
       if (!staffData?.clinic_id) return;
       setClinicId(staffData.clinic_id);
@@ -75,8 +92,6 @@ export default function CalendarPage() {
       }
     } catch (err) {
       console.error('Error initializing calendar:', err);
-    } finally {
-      setLoading(false);
     }
   }
 

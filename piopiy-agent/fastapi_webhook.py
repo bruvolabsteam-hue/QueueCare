@@ -500,9 +500,12 @@ async def transfer_to_doctor(request: Request):
             }
 
         # Check availability first - block transfer if doctor is off/fully booked
+        today_str = datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%Y-%m-%d')
         avail_res = await run_db(
             lambda: supabase.rpc('check_doctor_availability', {
-                'p_clinic_id': clinic_id
+                'p_clinic_id': clinic_id,
+                'p_date': today_str,
+                'p_doctor_name': None
             }).execute()
         )
 

@@ -1,14 +1,16 @@
 /* eslint-disable */
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import styles from '../table.module.css';
 import { createClient } from '@/utils/supabase/client';
+import { useClinic } from '../../context/ClinicContext';
 
 export default function StaffPage() {
   const supabase = createClient();
+  const { clinicId: contextClinicId, refreshClinicData } = useClinic();
   const [user, setUser] = useState(null);
   const [staff, setStaff] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!contextClinicId);
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -17,34 +19,47 @@ export default function StaffPage() {
   const [formData, setFormData] = useState(initialFormState);
   
   const [isSaving, setIsSaving] = useState(false);
-  const [clinicId, setClinicId] = useState(null);
+  const [clinicId, setClinicId] = useState(contextClinicId || null);
 
   useEffect(() => {
-    async function initUser() {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        setUser(authUser);
-        fetchStaff(authUser.email);
-      }
+    if (contextClinicId && contextClinicId !== clinicId) {
+      setClinicId(contextClinicId);
     }
-    initUser();
-  }, []);
+  }, [contextClinicId]);
 
-  async function fetchStaff(userEmail) {
-    setLoading(true);
-    const { data: staffData } = await supabase.from('staff').select('clinic_id').eq('email', userEmail).single();
-    if (staffData?.clinic_id) {
-      setClinicId(staffData.clinic_id);
-      
-      const { data } = await supabase.from('staff')
-        .select('*')
-        .eq('clinic_id', staffData.clinic_id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-      setStaff(data || []);
+  const loadStaffData = useCallback(async () => {
+    let cid = contextClinicId || clinicId;
+    if (!cid) {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) { setLoading(false); return; }
+      setUser(authUser);
+
+      const { data: staffData } = await supabase
+        .from('staff')
+        .select('clinic_id')
+        .or(`email.eq.${authUser.email},id.eq.${authUser.id}`)
+        .limit(1)
+        .maybeSingle();
+
+      if (!staffData?.clinic_id) { setLoading(false); return; }
+      cid = staffData.clinic_id;
+      setClinicId(cid);
     }
+
+    const { data } = await supabase
+      .from('staff')
+      .select('*')
+      .eq('clinic_id', cid)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    setStaff(data || []);
     setLoading(false);
-  }
+  }, [contextClinicId, clinicId, supabase]);
+
+  useEffect(() => {
+    loadStaffData();
+  }, [loadStaffData]);
 
   async function handleSaveStaff(e) {
     e.preventDefault();
@@ -78,7 +93,8 @@ export default function StaffPage() {
       setShowAddModal(false);
       setShowEditModal(false);
       setFormData(initialFormState);
-      fetchStaff(user.email);
+      loadStaffData();
+      if (refreshClinicData) refreshClinicData();
     } catch (err) {
       alert("Error saving doctor: " + err.message);
     } finally {
@@ -93,7 +109,8 @@ export default function StaffPage() {
     try {
       const { error } = await supabase.from('staff').update({ is_active: false }).eq('id', doctor.id);
       if (error) throw error;
-      fetchStaff(user.email);
+      loadStaffData();
+      if (refreshClinicData) refreshClinicData();
     } catch (err) {
       alert("Error removing doctor: " + err.message);
     }

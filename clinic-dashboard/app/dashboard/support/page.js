@@ -1,39 +1,38 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createClient } from '../../../utils/supabase/client';
+import { useClinic } from '../../context/ClinicContext';
 import styles from '../dashboard.module.css';
 
 export default function SupportPage() {
-  const [clinic, setClinic] = useState(null);
+  const { clinic: contextClinic } = useClinic();
+  const [clinic, setClinic] = useState(contextClinic || null);
   const [supportNumber, setSupportNumber] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [issueType, setIssueType] = useState('General Inquiry');
   const [message, setMessage] = useState('');
   
   const supabase = createClient();
 
   useEffect(() => {
+    if (contextClinic && !clinic) {
+      setClinic(contextClinic);
+    }
+  }, [contextClinic, clinic]);
+
+  useEffect(() => {
     async function loadData() {
-      // Load clinic info to include in the message
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: staffData } = await supabase.from('staff').select('clinic_id').eq('id', user.id).single();
-        if (staffData) {
-          const { data: clinicData } = await supabase.from('clinics').select('clinic_name').eq('id', staffData.clinic_id).single();
-          setClinic(clinicData);
-        }
-      }
-      
-      // Load global support number
-      const { data: platformData } = await supabase.from('platform_settings').select('super_admin_phone').limit(1).single();
-      if (platformData) {
+      const { data: platformData } = await supabase
+        .from('platform_settings')
+        .select('super_admin_phone')
+        .limit(1)
+        .maybeSingle();
+      if (platformData?.super_admin_phone) {
         setSupportNumber(platformData.super_admin_phone);
       }
-      
-      setLoading(false);
     }
     loadData();
-  }, []);
+  }, [supabase]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

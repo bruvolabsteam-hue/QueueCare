@@ -1,51 +1,71 @@
 /* eslint-disable */
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '../../../utils/supabase/client';
+import { useClinic } from '../../context/ClinicContext';
 import styles from '../dashboard.module.css';
 
 export default function SettingsPage() {
-  const [clinic, setClinic] = useState(null);
+  const { clinicId: contextClinicId, clinic: contextClinic, refreshClinicData } = useClinic();
+  const [clinic, setClinic] = useState(contextClinic || null);
   const [doctorPhone, setDoctorPhone] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!contextClinic);
   const [saving, setSaving] = useState(false);
   
   const supabase = createClient();
 
   useEffect(() => {
-    async function loadSettings() {
+    if (contextClinic && !clinic) {
+      setClinic(contextClinic);
+      setLoading(false);
+    }
+  }, [contextClinic, clinic]);
+
+  const loadSettings = useCallback(async () => {
+    let cid = contextClinicId || clinic?.id;
+
+    if (!cid) {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { setLoading(false); return; }
       
       const { data: staffData } = await supabase
         .from('staff')
         .select('clinic_id')
-        .eq('id', user.id)
-        .single();
+        .or(`email.eq.${user.email},id.eq.${user.id}`)
+        .limit(1)
+        .maybeSingle();
         
-      if (staffData) {
-        const { data: clinicData } = await supabase
+      if (staffData?.clinic_id) {
+        cid = staffData.clinic_id;
+      } else {
+        const { data: cByEmail } = await supabase
           .from('clinics')
-          .select('*')
-          .eq('id', staffData.clinic_id)
-          .single();
-        setClinic(clinicData);
-
-        // Fetch Doctor Phone
-        const { data: docData } = await supabase
-          .from('staff')
-          .select('phone')
-          .eq('clinic_id', staffData.clinic_id)
-          .eq('role', 'doctor')
-          .limit(1);
-        if (docData && docData.length > 0) {
-          setDoctorPhone(docData[0].phone || '');
-        }
+          .select('id')
+          .eq('email', user.email)
+          .maybeSingle();
+        cid = cByEmail?.id;
       }
-      setLoading(false);
     }
+
+    if (cid) {
+      const [cRes, docRes] = await Promise.all([
+        supabase.from('clinics').select('*').eq('id', cid).single(),
+        supabase.from('staff').select('phone').eq('clinic_id', cid).eq('role', 'doctor').limit(1)
+      ]);
+
+      if (cRes.data) {
+        setClinic(cRes.data);
+      }
+      if (docRes.data && docRes.data.length > 0) {
+        setDoctorPhone(docRes.data[0].phone || '');
+      }
+    }
+    setLoading(false);
+  }, [contextClinicId, clinic, supabase]);
+
+  useEffect(() => {
     loadSettings();
-  }, []);
+  }, [loadSettings]);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -104,6 +124,7 @@ export default function SettingsPage() {
       alert('Error saving settings: ' + error.message);
     } else {
       alert('Settings saved successfully!');
+      if (refreshClinicData) refreshClinicData();
     }
   };
 

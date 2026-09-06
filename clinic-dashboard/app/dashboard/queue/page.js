@@ -2,6 +2,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '../../../utils/supabase/client';
+import { useClinic } from '../../context/ClinicContext';
 import { DoctorQueuePanel } from '../components/QueueView';
 
 function formatTime(timeStr) {
@@ -151,45 +152,66 @@ function GlobalAddPatientModal({ doctors, clinicId, onClose, onSuccess }) {
 }
 
 export default function LiveQueuePage() {
-  const [clinicId, setClinicId] = useState(null);
-  const [staffId, setStaffId] = useState(null);
+  const { clinicId: contextClinicId, staffData: contextStaffData } = useClinic();
+  const [clinicId, setClinicId] = useState(contextClinicId || null);
+  const [staffId, setStaffId] = useState(contextStaffData?.id || null);
   const [doctorPanels, setDoctorPanels] = useState([]);
   const [allDoctors, setAllDoctors] = useState([]); // for the modal dropdown
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!contextClinicId);
   const [showGlobalAdd, setShowGlobalAdd] = useState(false);
   const [transferAlerts, setTransferAlerts] = useState([]);
   const supabase = createClient();
 
+  useEffect(() => {
+    if (contextClinicId && contextClinicId !== clinicId) {
+      setClinicId(contextClinicId);
+    }
+    if (contextStaffData?.id && contextStaffData.id !== staffId) {
+      setStaffId(contextStaffData.id);
+    }
+  }, [contextClinicId, contextStaffData]);
+
   const loadData = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    let activeClinicId = contextClinicId || clinicId;
+    let activeStaffId = contextStaffData?.id || staffId;
 
-    const { data: staffData } = await supabase
-      .from('staff')
-      .select('clinic_id, id')
-      .eq('email', user.email)
-      .single();
-    if (!staffData) { setLoading(false); return; }
+    if (!activeClinicId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
 
-    setClinicId(staffData.clinic_id);
-    setStaffId(staffData.id);
+      const { data: staffData } = await supabase
+        .from('staff')
+        .select('clinic_id, id')
+        .or(`email.eq.${user.email},id.eq.${user.id}`)
+        .limit(1)
+        .maybeSingle();
+
+      if (!staffData?.clinic_id) { setLoading(false); return; }
+      activeClinicId = staffData.clinic_id;
+      activeStaffId = staffData.id;
+      setClinicId(activeClinicId);
+      setStaffId(activeStaffId);
+    }
 
     const today = new Date().toISOString().split('T')[0];
 
-    // Fetch ALL active doctors for the modal dropdown
-    const { data: allDoctorsData } = await supabase
-      .from('staff')
-      .select('id, name')
-      .eq('clinic_id', staffData.clinic_id)
-      .eq('role', 'doctor')
-      .eq('is_active', true);
+    // Fetch ALL active doctors for the modal dropdown in parallel with today's settings
+    const [allDocsRes, dailySettingsRes] = await Promise.all([
+      supabase
+        .from('staff')
+        .select('id, name')
+        .eq('clinic_id', activeClinicId)
+        .eq('role', 'doctor')
+        .eq('is_active', true),
+      supabase
+        .from('doctor_daily_settings')
+        .select('*, doctor:doctor_id(id, name)')
+        .eq('clinic_id', activeClinicId)
+        .eq('date', today)
+    ]);
 
-    // Fetch today's daily settings
-    const { data: allDailySettings } = await supabase
-      .from('doctor_daily_settings')
-      .select('*, doctor:doctor_id(id, name)')
-      .eq('clinic_id', staffData.clinic_id)
-      .eq('date', today);
+    const allDoctorsData = allDocsRes.data || [];
+    const allDailySettings = dailySettingsRes.data || [];
 
     // Build set of doctor IDs that have daily settings today
     const scheduledDoctorIds = new Set((allDailySettings || []).map(s => s.doctor_id));

@@ -2,88 +2,82 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { useClinic } from '../context/ClinicContext';
 import styles from './dashboard.module.css';
 
 export default function DashboardPage() {
   const supabase = createClient();
+  const { clinicId, doctors, openDoctorDetails } = useClinic();
   const [stats, setStats] = useState({
     totalPatientsToday: 0,
-    avgWaitTime: 0,
+    avgWaitTime: 10,
     activeDoctors: 0,
     recentPatients: []
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!clinicId) return;
+
+    let isMounted = true;
     async function fetchDashboardData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: staffData } = await supabase.from('staff').select('clinic_id').eq('email', user.email).single();
-      if (!staffData) {
-        setLoading(false);
-        return;
-      }
-      const clinicId = staffData.clinic_id;
-
+      setLoading(true);
       const today = new Date().toISOString().split('T')[0];
-      const startOfDay = new Date(today).toISOString();
+      const startOfDay = `${today}T00:00:00`;
 
-      // 1. Total Patients Today
-      const { count: patientsCount, data: recent } = await supabase
-        .from('patients')
-        .select('*', { count: 'exact' })
-        .eq('clinic_id', clinicId)
-        .gte('created_at', startOfDay)
-        .order('created_at', { ascending: false });
-
-      // 2. Active Doctors
-      const { count: doctorsCount } = await supabase
-        .from('staff')
-        .select('*', { count: 'exact' })
-        .eq('clinic_id', clinicId)
-        .eq('role', 'doctor')
-        .eq('is_active', true);
-
-      // 3. Average Wait Time from Today's Setup
-      const { data: dailySettings } = await supabase
-        .from('doctor_daily_settings')
-        .select('time_per_patient_mins')
-        .eq('clinic_id', clinicId)
-        .eq('date', today)
-        .eq('is_active', true);
-
-      let avgWait = 10; // default
-      let isFallbackWaitTime = false;
-      if (dailySettings && dailySettings.length > 0) {
-        const total = dailySettings.reduce((sum, setting) => sum + (setting.time_per_patient_mins || 0), 0);
-        avgWait = Math.round(total / dailySettings.length);
-      } else {
-        // Fallback to clinic settings
-        isFallbackWaitTime = true;
-        const { data: cSettings } = await supabase
+      // Parallelize queries
+      const [patientsRes, doctorsRes, settingsRes, clinicRes] = await Promise.all([
+        supabase
+          .from('patients')
+          .select('*', { count: 'exact' })
+          .eq('clinic_id', clinicId)
+          .gte('created_at', startOfDay)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('staff')
+          .select('*', { count: 'exact' })
+          .eq('clinic_id', clinicId)
+          .eq('role', 'doctor')
+          .eq('is_active', true),
+        supabase
+          .from('doctor_daily_settings')
+          .select('time_per_patient_mins')
+          .eq('clinic_id', clinicId)
+          .eq('date', today)
+          .eq('is_active', true),
+        supabase
           .from('clinics')
           .select('avg_time_per_patient_mins')
           .eq('id', clinicId)
-          .single();
-        if (cSettings?.avg_time_per_patient_mins) {
-          avgWait = cSettings.avg_time_per_patient_mins;
-        }
+          .maybeSingle()
+      ]);
+
+      if (!isMounted) return;
+
+      let avgWait = 10;
+      let isFallbackWaitTime = false;
+      const dailySettings = settingsRes.data || [];
+      if (dailySettings.length > 0) {
+        const total = dailySettings.reduce((sum, s) => sum + (s.time_per_patient_mins || 0), 0);
+        avgWait = Math.round(total / dailySettings.length);
+      } else if (clinicRes.data?.avg_time_per_patient_mins) {
+        isFallbackWaitTime = true;
+        avgWait = clinicRes.data.avg_time_per_patient_mins;
       }
 
       setStats({
-        totalPatientsToday: patientsCount || 0,
+        totalPatientsToday: patientsRes.count || (patientsRes.data || []).length || 0,
         avgWaitTime: avgWait,
-        isFallbackWaitTime: isFallbackWaitTime,
-        activeDoctors: doctorsCount || 0,
-        recentPatients: (recent || []).slice(0, 5) // top 5
+        isFallbackWaitTime,
+        activeDoctors: doctorsRes.count || (doctorsRes.data || []).length || (doctors || []).length || 0,
+        recentPatients: (patientsRes.data || []).slice(0, 5)
       });
       setLoading(false);
     }
-    fetchDashboardData();
-  }, []);
 
-  if (loading) return <div style={{padding: '2rem'}}>Loading Overview...</div>;
+    fetchDashboardData();
+    return () => { isMounted = false; };
+  }, [clinicId, supabase, doctors]);
 
   return (
     <div>
@@ -113,11 +107,22 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className={styles.statCard}>
+        <div 
+          className={styles.statCard} 
+          style={{ cursor: 'pointer', transition: 'transform 0.15s ease' }}
+          onClick={() => {
+            if (doctors.length > 0) openDoctorDetails(doctors[0]);
+          }}
+          title="Click to view all clinic doctor profiles"
+        >
           <div className={styles.statTitle}>Active Doctors</div>
           <div className={styles.statValue}>{stats.activeDoctors}</div>
-          <div className={styles.statTrend} style={{color: '#6b7280'}}>
-            Currently registered staff
+          <div className={styles.statTrend} style={{color: '#0284c7', fontWeight: '600'}}>
+            {doctors.length > 0 ? (
+              <span>🩺 {doctors.map(d => d.name.replace(/^Dr\.?\s*/i, '')).join(', ')}</span>
+            ) : (
+              'Currently registered staff'
+            )}
           </div>
         </div>
       </div>

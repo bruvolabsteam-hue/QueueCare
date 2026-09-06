@@ -4,12 +4,15 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { ClinicProvider, useClinic } from '../context/ClinicContext';
+import DoctorDetailsModal from './components/DoctorDetailsModal';
 import styles from './dashboard.module.css';
 
-export default function DashboardLayout({ children }) {
+function DashboardLayoutInner({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
+  const { doctors, openDoctorDetails, clinic } = useClinic();
   const [userEmail, setUserEmail] = useState('');
   const [userName, setUserName] = useState('Admin');
 
@@ -20,11 +23,13 @@ export default function DashboardLayout({ children }) {
         setUserEmail(user.email);
         if (user.user_metadata?.full_name) {
           setUserName(user.user_metadata.full_name);
+        } else if (clinic?.clinic_name) {
+          setUserName(clinic.clinic_name);
         }
       }
     }
     getUser();
-  }, []);
+  }, [supabase, clinic]);
 
   return (
     <div className={styles.layout}>
@@ -101,9 +106,62 @@ export default function DashboardLayout({ children }) {
             <span className={styles.headerSubtitle}>Clinic Dashboard</span>
           </h2>
           <div className={styles.headerActions}>
-            <div className={styles.userProfile}>
-              <div className={styles.avatar}>{userName ? userName.charAt(0).toUpperCase() : 'A'}</div>
-              <span className={styles.userName}>{userName}</span>
+            {/* Interactive Doctors Roster in Header */}
+            <div className={styles.doctorsHeaderBar}>
+              <div
+                className={styles.doctorsLabel}
+                onClick={() => {
+                  if (doctors.length > 0) openDoctorDetails(doctors[0]);
+                }}
+                style={{ cursor: 'pointer' }}
+                title="View clinic doctors roster"
+              >
+                <span className={styles.stethoscopeIcon}>🩺</span>
+                <span className={styles.doctorsHeaderTitle}>Doctors</span>
+                <span className={styles.doctorsBadge}>{doctors.length}</span>
+              </div>
+
+              <div className={styles.doctorPillsContainer}>
+                {doctors.length === 0 ? (
+                  <span className={styles.noDoctorsHint}>No active doctors</span>
+                ) : (
+                  doctors.map((doc) => (
+                    <button
+                      key={doc.id}
+                      type="button"
+                      className={styles.doctorPillBtn}
+                      onClick={() => openDoctorDetails(doc)}
+                      title={`Click to view ${doc.name}'s details, queue & schedule`}
+                    >
+                      <span
+                        className={styles.doctorStatusDot}
+                        style={{ backgroundColor: doc.statusColor || '#10b981' }}
+                      />
+                      <span className={styles.doctorPillName}>{doc.name}</span>
+                      {doc.isLeave && <span className={styles.pillLeaveTag}>Leave</span>}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Admin Avatar Profile - click opens doctor roster */}
+            <div
+              className={styles.userProfile}
+              onClick={() => {
+                if (doctors.length > 0) {
+                  openDoctorDetails(doctors[0]);
+                }
+              }}
+              title="Click to view all clinic doctors and details"
+            >
+              <div className={styles.avatar}>
+                {userName ? userName.replace(/^Dr\.?\s*/i, '').charAt(0).toUpperCase() : 'A'}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span className={styles.userName}>{userName}</span>
+                <span style={{ fontSize: '0.7rem', color: '#64748b', lineHeight: 1 }}>Clinic Admin</span>
+              </div>
             </div>
           </div>
         </header>
@@ -111,7 +169,18 @@ export default function DashboardLayout({ children }) {
         <div className={styles.content}>
           {children}
         </div>
+
+        {/* Universal Doctor Details Modal */}
+        <DoctorDetailsModal />
       </main>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }) {
+  return (
+    <ClinicProvider>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </ClinicProvider>
   );
 }
