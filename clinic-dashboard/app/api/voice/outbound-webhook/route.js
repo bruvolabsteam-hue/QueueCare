@@ -45,6 +45,48 @@ export async function POST(req) {
       })
       .eq('id', patientId);
 
+    // If cancelled, trigger "come early" message to the next patient in line
+    if (newOutboundStatus === 'cancelled') {
+      // 1. Get the current patient's clinic and doctor
+      const { data: cancelledPatient } = await supabase
+        .from('patients')
+        .select('clinic_id, doctor_id, token_number, clinics(name)')
+        .eq('id', patientId)
+        .single();
+      
+      if (cancelledPatient) {
+        const today = new Date().toISOString().split('T')[0];
+        // 2. Find the NEXT waiting patient for this doctor who hasn't been called/skipped
+        const { data: nextPatients } = await supabase
+          .from('patients')
+          .select('id, name, phone, token_number')
+          .eq('clinic_id', cancelledPatient.clinic_id)
+          .eq('doctor_id', cancelledPatient.doctor_id)
+          .eq('status', 'waiting')
+          .gte('created_at', today)
+          .gt('token_number', cancelledPatient.token_number)
+          .order('token_number', { ascending: true })
+          .limit(1);
+          
+        if (nextPatients && nextPatients.length > 0) {
+          const nextPatient = nextPatients[0];
+          const clinicName = cancelledPatient.clinics?.name || 'the clinic';
+          
+          // 3. Send them an early arrival message
+          const messageContent = `Hi ${nextPatient.name}, good news! A patient ahead of you at ${clinicName} has cancelled. The queue is moving faster than expected. Are you able to come in earlier? Please reply YES if you can arrive soon, or NO if you will stick to your original estimated time.`;
+          
+          await supabase.from('pending_messages').insert({
+            clinic_id: cancelledPatient.clinic_id,
+            patient_phone: nextPatient.phone,
+            event_type: 'early_arrival_opportunity',
+            message_content: messageContent,
+            platform: 'whatsapp',
+            status: 'pending'
+          });
+        }
+      }
+    }
+
     return NextResponse.json({ success: true, outbound_status: newOutboundStatus });
 
   } catch (err) {
