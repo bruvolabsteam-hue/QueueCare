@@ -327,7 +327,22 @@ function DoctorQueuePanel({ doctor, clinicId, staffId, isOffline, doctorStartTim
                     {p.name}
                     {p.status === 'skipped' && <span style={{ background: '#ef4444', color: 'white', fontSize: '9px', padding: '2px 5px', borderRadius: '4px', fontWeight: '700' }}>SKIPPED</span>}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>{p.phone}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {p.phone}
+                    {p.outbound_status && p.outbound_status !== 'none' && (
+                      <span style={{
+                        fontSize: '10px',
+                        fontWeight: '700',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: p.outbound_status === 'confirmed' ? '#ecfdf5' : p.outbound_status === 'calling' ? '#eff6ff' : p.outbound_status === 'delayed' ? '#fffbeb' : '#fef2f2',
+                        color: p.outbound_status === 'confirmed' ? '#047857' : p.outbound_status === 'calling' ? '#1d4ed8' : p.outbound_status === 'delayed' ? '#b45309' : '#b91c1c',
+                        border: `1px solid ${p.outbound_status === 'confirmed' ? '#a7f3d0' : p.outbound_status === 'calling' ? '#bfdbfe' : p.outbound_status === 'delayed' ? '#fde68a' : '#fecaca'}`
+                      }}>
+                        {p.outbound_status === 'calling' ? '📞 Calling...' : p.outbound_status === 'confirmed' ? '✅ Confirmed' : p.outbound_status === 'delayed' ? '⏳ Delayed' : '❌ Cancelled'}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               {!isOffline && (
