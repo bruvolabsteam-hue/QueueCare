@@ -4,6 +4,15 @@ import { createClient } from '@supabase/supabase-js';
 // Webhook endpoint for Voice AI (e.g., Bland AI) post-call data
 export async function POST(req) {
   try {
+    // 1. Verify Webhook Secret for security
+    const webhookSecret = process.env.ELEVENLABS_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      // ElevenLabs passes the secret in the header
+      const signature = req.headers.get('elevenlabs-signature');
+      if (signature !== webhookSecret) {
+        return NextResponse.json({ error: 'Unauthorized webhook - invalid signature' }, { status: 401 });
+      }
+    }
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
