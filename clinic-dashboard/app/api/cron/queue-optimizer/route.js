@@ -62,8 +62,37 @@ export async function GET(req) {
               })
               .eq('id', patient.id);
 
-            // TODO: Trigger Bland AI Voice Call here
-            // const callResponse = await triggerVoiceCall({ ... });
+            // Trigger ElevenLabs Voice Call
+            try {
+              const elevenlabsApiKey = process.env.ELEVENLABS_API_KEY;
+              const elevenlabsAgentId = process.env.ELEVENLABS_AGENT_ID;
+              const elevenlabsPhone = process.env.ELEVENLABS_PHONE_NUMBER;
+
+              if (elevenlabsApiKey && elevenlabsAgentId && elevenlabsPhone) {
+                await fetch(`https://api.elevenlabs.io/v1/convai/agents/${elevenlabsAgentId}/calls/outbound`, {
+                  method: 'POST',
+                  headers: {
+                    'xi-api-key': elevenlabsApiKey,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    recipient_phone_number: patient.phone,
+                    caller_phone_number: elevenlabsPhone,
+                    dynamic_variables: {
+                      patient_id: patient.id,
+                      patient_name: patient.name,
+                      clinic_name: clinic.name,
+                      doctor_name: doctorName,
+                      estimated_wait_mins: estimatedWaitMins
+                    }
+                  })
+                });
+              } else {
+                console.warn('ElevenLabs credentials missing in environment variables. Call skipped.');
+              }
+            } catch (apiErr) {
+              console.error('ElevenLabs API Error:', apiErr);
+            }
 
             // TODO: Trigger WhatsApp Message here
             const messageContent = `Hi ${patient.name}, this is ${clinic.name}. Your appointment with ${doctorName} is in approximately ${estimatedWaitMins} minutes. Please reply YES to confirm you are on your way, or NO to cancel.`;
