@@ -13,6 +13,7 @@ export default function KioskPage() {
   const [tokenNumber, setTokenNumber] = useState(null);
   const [loading, setLoading] = useState(false);
   const [clinicId, setClinicId] = useState(null);
+  const [clinic, setClinic] = useState(null);
 
   const supabase = createClient();
 
@@ -20,12 +21,20 @@ export default function KioskPage() {
     async function loadClinic() {
       const urlParams = new URLSearchParams(window.location.search);
       let cId = urlParams.get('clinic_id');
+      let clinicData = null;
       
       if (!cId) {
-        const { data } = await supabase.from('clinics').select('id').limit(1).single();
-        if (data) cId = data.id;
+        const { data } = await supabase.from('clinics').select('*').limit(1).single();
+        if (data) {
+          cId = data.id;
+          clinicData = data;
+        }
+      } else {
+        const { data } = await supabase.from('clinics').select('*').eq('id', cId).single();
+        if (data) clinicData = data;
       }
       setClinicId(cId);
+      if (clinicData) setClinic(clinicData);
 
       if (cId) {
         // Fetch Doctors
@@ -97,11 +106,11 @@ export default function KioskPage() {
         {step === 'select_doctor' && (
           <div>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>
-                Select Doctor / डॉक्टर चुनें
+              <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#111827', marginBottom: '0.25rem' }}>
+                {clinic?.clinic_name ? `${clinic.clinic_name} Kiosk` : 'Select Doctor / डॉक्टर चुनें'}
               </h1>
               <p style={{ fontSize: '18px', color: '#6b7280' }}>
-                Who would you like to see? / आप किस डॉक्टर से मिलना चाहते हैं?
+                {clinic?.tagline || 'Who would you like to see? / आप किस डॉक्टर से मिलना चाहते हैं?'}
               </p>
             </div>
             
@@ -110,7 +119,7 @@ export default function KioskPage() {
                 <button 
                   key={doc.id}
                   onClick={() => handleSelectDoctor(doc.id)}
-                  style={{ width: '100%', padding: '24px', fontSize: '24px', fontWeight: 'bold', background: '#f8fafc', color: '#2563eb', border: '2px solid #bfdbfe', borderRadius: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{ width: '100%', padding: '24px', fontSize: '24px', fontWeight: 'bold', background: clinic?.brand_color ? `${clinic.brand_color}15` : '#f8fafc', color: clinic?.brand_color || '#2563eb', border: `2px solid ${clinic?.brand_color || '#bfdbfe'}`, borderRadius: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   {doc.name}
                 </button>
@@ -123,13 +132,13 @@ export default function KioskPage() {
           <div>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#111827', marginBottom: '0.5rem' }}>
-                Welcome / आपका स्वागत है
+                {clinic?.welcome_message || 'Welcome / आपका स्वागत है'}
               </h1>
               <p style={{ fontSize: '18px', color: '#6b7280' }}>
-                Enter your details to get a token / टोकन पाने के लिए अपना विवरण दर्ज करें
+                {clinic?.clinic_name || 'Enter your details to get a token / टोकन पाने के लिए अपना विवरण दर्ज करें'}
               </p>
               {selectedDoctorId && (
-                <p style={{ fontSize: '16px', color: '#2563eb', fontWeight: 'bold', marginTop: '0.5rem' }}>
+                <p style={{ fontSize: '16px', color: clinic?.brand_color || '#2563eb', fontWeight: 'bold', marginTop: '0.5rem' }}>
                   For: {doctors.find(d => d.id === selectedDoctorId)?.name}
                 </p>
               )}
@@ -177,7 +186,7 @@ export default function KioskPage() {
                 <button 
                   type="submit"
                   disabled={loading}
-                  style={{ flex: 2, padding: '20px', fontSize: '24px', fontWeight: 'bold', background: '#10b981', color: 'white', borderRadius: '16px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(16,185,129,0.3)' }}
+                  style={{ flex: 2, padding: '20px', fontSize: '24px', fontWeight: 'bold', background: clinic?.brand_color || '#10b981', color: 'white', borderRadius: '16px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                 >
                   {loading 
                     ? 'Generating... / बनाया जा रहा है...' 
@@ -190,7 +199,7 @@ export default function KioskPage() {
 
         {step === 'success' && (
           <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-            <div style={{ width: '80px', height: '80px', background: '#10b981', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
+            <div style={{ width: '80px', height: '80px', background: clinic?.brand_color || '#10b981', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
               <svg style={{ width: '40px', height: '40px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
             </div>
             <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '1rem', color: '#111827' }}>
@@ -199,19 +208,28 @@ export default function KioskPage() {
             <p style={{ fontSize: '20px', color: '#6b7280', marginBottom: '1rem' }}>
               Your token number is / आपका टोकन नंबर है:
             </p>
-            <div style={{ fontSize: '96px', fontWeight: '900', color: '#2563eb', lineHeight: '1', marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: '96px', fontWeight: '900', color: clinic?.brand_color || '#2563eb', lineHeight: '1', marginBottom: '1.5rem' }}>
               {tokenNumber}
             </div>
-            <p style={{ fontSize: '16px', color: '#10b981', fontWeight: '600' }}>
+            <p style={{ fontSize: '16px', color: clinic?.brand_color || '#10b981', fontWeight: '600' }}>
               ✅ You will receive a WhatsApp message with your estimated turn time
             </p>
-            <p style={{ fontSize: '14px', color: '#10b981' }}>
+            <p style={{ fontSize: '14px', color: clinic?.brand_color || '#10b981' }}>
               ✅ आपको WhatsApp पर आपकी बारी का अनुमानित समय मिलेगा
             </p>
           </div>
         )}
 
       </div>
+      
+      {/* Whitelabel / Powered By Footer */}
+      {(clinic?.show_powered_by ?? true) && (
+        <div style={{ marginTop: '2rem', textAlign: 'center', opacity: 0.7, paddingBottom: '2rem' }}>
+          <p style={{ fontSize: '14px', color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+            Powered by <strong style={{color: clinic?.brand_color || '#111827'}}>{clinic?.whitelabel_name || 'BruvoFlow'}</strong>
+          </p>
+        </div>
+      )}
     </div>
   );
 }
