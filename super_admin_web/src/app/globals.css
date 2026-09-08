@@ -2,19 +2,24 @@
 @import url('https://fonts.cdnfonts.com/css/codec-pro');
 @import "tailwindcss";
 
+/* Disable automatic system dark mode so the cream theme always shows */
+@custom-variant dark (&:where(.dark, .dark *));
 @theme {
   --color-brand-50: #f0fdfa;
   --color-brand-100: #ccfbf1;
-  --color-brand-500: #14b8a6;
-  --color-brand-600: #0d9488;
-  --color-brand-900: #134e4a;
+  --color-brand-500: #38B6FF;
+  --color-brand-600: #0284c7;
+  --color-brand-900: #0c4a6e;
+  
+  --color-slate-50: rgba(255, 255, 255, 0.6);
+  --color-slate-100: #ffffff;
   
   --color-dark-800: #1e293b;
   --color-dark-900: #0f172a;
 }
 
 :root {
-  --background: #f8fafc;
+  --background: #FCF4E7;
   --foreground: #0f172a;
   --font-bruvo: 'Glacial Indifference', 'Montserrat', -apple-system, sans-serif;
   --font-flow: 'Codec Pro', 'Plus Jakarta Sans', -apple-system, sans-serif;
@@ -22,13 +27,7 @@
   --color-brand-cream: #FCF4E7;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f8fafc;
-  }
-}
-
+/* Dark mode overrides removed to keep consistent cream theme */
 body {
   background-color: var(--background);
   color: var(--foreground);
@@ -44,10 +43,7 @@ body {
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
 }
 
-.dark .glass-panel {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
+
 
 .gradient-text {
   background: linear-gradient(135deg, var(--color-brand-500) 0%, #3b82f6 100%);
