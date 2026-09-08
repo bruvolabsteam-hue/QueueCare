@@ -29,9 +29,17 @@ export function ClinicProvider({ children }) {
   // Initialize from cache immediately (0ms rehydration)
   useEffect(() => {
     try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlCid = urlParams.get('clinic_id');
+      
       const cached = sessionStorage.getItem('qc_clinic_cache');
       if (cached) {
         const parsed = JSON.parse(cached);
+        // If there's a URL override that differs from cache, don't use cache
+        if (urlCid && parsed.clinicId !== urlCid) {
+          return;
+        }
+        
         if (parsed.clinicId) {
           setClinicId(parsed.clinicId);
           setClinic(parsed.clinic || null);
@@ -56,25 +64,36 @@ export function ClinicProvider({ children }) {
       }
       setUser(authUser);
 
-      // Find staff record
-      let { data: staff } = await supabase
-        .from('staff')
-        .select('clinic_id, id, name, role, phone, email')
-        .or(`email.eq.${authUser.email},id.eq.${authUser.id}`)
-        .limit(1)
-        .maybeSingle();
+      let cid = null;
+      
+      // Allow URL override for Super Admin impersonation
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlCid = urlParams.get('clinic_id');
+        if (urlCid) cid = urlCid;
+      }
 
-      let cid = staff?.clinic_id;
-
-      // Fallback: query clinics table directly by owner email
-      if (!cid && authUser.email) {
-        const { data: clinicRecord } = await supabase
-          .from('clinics')
-          .select('id, clinic_name, email')
-          .eq('email', authUser.email)
+      if (!cid) {
+        // Find staff record
+        let { data: staff } = await supabase
+          .from('staff')
+          .select('clinic_id, id, name, role, phone, email')
+          .or(`email.eq.${authUser.email},id.eq.${authUser.id}`)
+          .limit(1)
           .maybeSingle();
-        if (clinicRecord) {
-          cid = clinicRecord.id;
+
+        cid = staff?.clinic_id;
+
+        // Fallback: query clinics table directly by owner email
+        if (!cid && authUser.email) {
+          const { data: clinicRecord } = await supabase
+            .from('clinics')
+            .select('id, clinic_name, email')
+            .eq('email', authUser.email)
+            .maybeSingle();
+          if (clinicRecord) {
+            cid = clinicRecord.id;
+          }
         }
       }
 
