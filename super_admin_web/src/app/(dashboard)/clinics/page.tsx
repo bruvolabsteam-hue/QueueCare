@@ -165,7 +165,7 @@ export default function ClinicsPage() {
                           <Settings className="h-3.5 w-3.5" />
                           Settings
                         </button>
-                        <a href={`http://localhost:3000?clinic_id=${clinic.id}`} target="_blank" className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20" title="Impersonate Clinic">
+                        <a href={`${process.env.NEXT_PUBLIC_CLINIC_APP_URL || 'http://localhost:3000'}?clinic_id=${clinic.id}`} target="_blank" className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20" title="Impersonate Clinic">
                           <ExternalLink className="h-3.5 w-3.5" />
                           Impersonate
                         </a>
