@@ -47,14 +47,14 @@ export default function Sidebar() {
               <a
                 key={item.name}
                 href={item.href}
-                className={`group flex items-center px-3.5 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 transform hover:translate-x-1.5 active:scale-[0.98] ${
+                className={`group relative flex items-center px-3.5 py-2.5 text-sm font-medium rounded-xl transition-all duration-[280ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] transform hover:translate-x-[6px] active:scale-[0.97] active:translate-x-[3px] overflow-hidden ${
                   isActive
-                    ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 shadow-sm border-l-4 border-[#38B6FF]"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200"
+                    ? "text-[#0284c7] font-semibold bg-gradient-to-r from-[#38B6FF]/15 to-transparent shadow-[0_2px_8px_rgba(56,182,255,0.12)] border-l-4 border-[#38B6FF]"
+                    : "text-slate-600 hover:bg-gradient-to-r hover:from-[#38B6FF]/10 hover:to-transparent hover:text-[#0284c7]"
                 }`}
               >
                 <item.icon
-                  className={`mr-3 h-5 w-5 flex-shrink-0 transition-all duration-200 group-hover:scale-110 ${
+                  className={`mr-3 h-5 w-5 flex-shrink-0 transition-all duration-[280ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-[1.22] group-hover:rotate-[6deg] ${
                     isActive ? "text-[#38B6FF]" : "text-slate-400 group-hover:text-[#38B6FF]"
                   }`}
                   aria-hidden="true"

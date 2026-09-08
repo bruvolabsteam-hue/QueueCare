@@ -19,12 +19,12 @@
 }
 
 :root {
-  --background: #FCF4E7;
+  --background: #FDFBF7;
   --foreground: #0f172a;
   --font-bruvo: 'Glacial Indifference', 'Montserrat', -apple-system, sans-serif;
   --font-flow: 'Codec Pro', 'Plus Jakarta Sans', -apple-system, sans-serif;
   --color-brand-primary: #38B6FF;
-  --color-brand-cream: #FCF4E7;
+  --color-brand-cream: #FDFBF7;
 }
 
 /* Dark mode overrides removed to keep consistent cream theme */

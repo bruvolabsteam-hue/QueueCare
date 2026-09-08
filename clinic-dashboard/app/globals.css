@@ -3,17 +3,17 @@
 
 :root {
   /* User-Specified Theme Palette */
-  --color-background: #FCF4E7; /* Warm creamy white */
+  --color-background: #FDFBF7; /* Warm creamy ivory */
   --color-surface: #ffffff;
-  --color-surface-cream: #FCF4E7;
+  --color-surface-cream: #FDFBF7;
   --color-text-primary: #0f172a;
   --color-text-secondary: #475569;
-  --color-border: #ebdcc9; /* Subtle warm border */
+  --color-border: #f0e6d8; /* Subtle warm border */
   
   --color-brand-primary: #38B6FF; /* User-specified primary blue */
   --color-brand-start: #38B6FF;
   --color-brand-end: #0284c7;
-  --color-brand-cream: #FCF4E7;
+  --color-brand-cream: #FDFBF7;
   
   --color-error-bg: #fef2f2;
   --color-error-text: #dc2626;
