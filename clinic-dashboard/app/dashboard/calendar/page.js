@@ -56,12 +56,7 @@ export default function CalendarPage() {
     }
   }, [contextClinicId, contextDoctors]);
 
-  // Initialize fallback if context is still loading
-  useEffect(() => {
-    if (!clinicId) {
-      initClinicAndDoctors();
-    }
-  }, [clinicId]);
+  // Rely entirely on ClinicContext which properly handles impersonation and auth
 
   // Fetch events whenever month, clinic, or doctor filter changes
   useEffect(() => {
@@ -69,39 +64,6 @@ export default function CalendarPage() {
       fetchEvents();
     }
   }, [clinicId, currentDate, selectedDoctorFilter]);
-
-  async function initClinicAndDoctors() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: staffData } = await supabase
-        .from('staff')
-        .select('clinic_id')
-        .or(`email.eq.${user.email},id.eq.${user.id}`)
-        .limit(1)
-        .maybeSingle();
-
-      if (!staffData?.clinic_id) return;
-      setClinicId(staffData.clinic_id);
-
-      // Fetch all active doctors for dropdowns
-      const { data: docs } = await supabase
-        .from('staff')
-        .select('id, name, specialization')
-        .eq('clinic_id', staffData.clinic_id)
-        .eq('role', 'doctor')
-        .eq('is_active', true)
-        .order('name');
-
-      setDoctors(docs || []);
-      if (docs && docs.length > 0) {
-        setSelectedDoctorId(docs[0].id);
-      }
-    } catch (err) {
-      console.error('Error initializing calendar:', err);
-    }
-  }
 
   // Get start and end of the visible month grid
   function getGridDateRange() {
@@ -120,8 +82,8 @@ export default function CalendarPage() {
     const endDate = new Date(year, month + 1, remainingDays);
 
     return {
-      startDateStr: startDate.toISOString().split('T')[0],
-      endDateStr: endDate.toISOString().split('T')[0]
+      startDateStr: formatLocalDate(startDate),
+      endDateStr: formatLocalDate(endDate)
     };
   }
 
