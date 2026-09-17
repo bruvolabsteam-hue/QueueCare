@@ -14,6 +14,8 @@ const formatLocalDate = (d) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function CalendarPage() {
   const supabase = createClient();
   const { clinicId: contextClinicId, doctors: contextDoctors } = useClinic();
