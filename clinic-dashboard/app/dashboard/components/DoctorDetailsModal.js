@@ -338,7 +338,7 @@ export default function DoctorDetailsModal() {
             <button
               onClick={() => {
                 closeDoctorDetails();
-                router.push('/dashboard/calendar');
+                router.push(`/dashboard/calendar?doctor_id=${doc.id}`);
               }}
               style={{
                 flex: 1,

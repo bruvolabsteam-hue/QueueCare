@@ -24,6 +24,14 @@ export default function CalendarPage() {
   const [clinicId, setClinicId] = useState(contextClinicId || null);
   const [doctors, setDoctors] = useState(contextDoctors || []);
   const [selectedDoctorFilter, setSelectedDoctorFilter] = useState('all');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const docId = urlParams.get('doctor_id');
+      if (docId) setSelectedDoctorFilter(docId);
+    }
+  }, []);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
