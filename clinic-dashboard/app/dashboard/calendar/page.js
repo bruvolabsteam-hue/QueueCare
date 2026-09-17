@@ -5,6 +5,14 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useClinic } from '../../context/ClinicContext';
 import styles from './calendar.module.css';
+import { ChevronLeft, ChevronRight, Plus, Clock, Users, Video, MapPin, X } from 'lucide-react';
+
+const formatLocalDate = (d) => {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
 
 export default function CalendarPage() {
   const supabase = createClient();
@@ -240,7 +248,7 @@ export default function CalendarPage() {
         let cur = new Date(selectedDateStr);
         const end = new Date(rangeEndDateStr);
         while (cur <= end) {
-          datesToUpdate.push(cur.toISOString().split('T')[0]);
+          datesToUpdate.push(formatLocalDate(cur));
           cur.setDate(cur.getDate() + 1);
         }
       }
@@ -354,22 +362,22 @@ export default function CalendarPage() {
     const dateObj = new Date(year, month - 1, d);
     daysArray.push({
       dateObj,
-      dateStr: dateObj.toISOString().split('T')[0],
+      dateStr: formatLocalDate(dateObj),
       dayNum: d,
       isCurrentMonth: false
     });
   }
 
   // Current month days
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = formatLocalDate(new Date());
   for (let i = 1; i <= totalDaysInMonth; i++) {
     const dateObj = new Date(year, month, i);
     daysArray.push({
       dateObj,
-      dateStr: dateObj.toISOString().split('T')[0],
+      dateStr: formatLocalDate(dateObj),
       dayNum: i,
       isCurrentMonth: true,
-      isToday: dateObj.toISOString().split('T')[0] === todayStr
+      isToday: formatLocalDate(dateObj) === todayStr
     });
   }
 
@@ -380,7 +388,7 @@ export default function CalendarPage() {
       const dateObj = new Date(year, month + 1, i);
       daysArray.push({
         dateObj,
-        dateStr: dateObj.toISOString().split('T')[0],
+        dateStr: formatLocalDate(dateObj),
         dayNum: i,
         isCurrentMonth: false
       });
