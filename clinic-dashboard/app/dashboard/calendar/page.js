@@ -113,7 +113,11 @@ export default function CalendarPage() {
       });
 
       if (!error && data) {
-        setEvents(data);
+        // Apply client-side filter just in case the remote RPC hasn't been updated to accept p_doctor_id yet
+        const filteredData = docIdParam 
+          ? data.filter(ev => ev.doctor_id === docIdParam)
+          : data;
+        setEvents(filteredData);
         return;
       }
 
