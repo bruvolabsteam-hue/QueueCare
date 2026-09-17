@@ -20,6 +20,9 @@ export default function CalendarPage() {
   const supabase = createClient();
   const { clinicId: contextClinicId, doctors: contextDoctors } = useClinic();
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   // State
   const [clinicId, setClinicId] = useState(contextClinicId || null);
   const [doctors, setDoctors] = useState(contextDoctors || []);
@@ -80,16 +83,16 @@ export default function CalendarPage() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
-    const firstDayOfMonth = new Date(year, month, 1);
-    const lastDayOfMonth = new Date(year, month + 1, 0);
+    const firstDayOfMonth = new Date(year, month, 1, 12, 0, 0);
+    const lastDayOfMonth = new Date(year, month + 1, 0, 12, 0, 0);
 
     // Day of week for first day (0 = Sun, 1 = Mon...)
     const startDayIndex = firstDayOfMonth.getDay();
-    const startDate = new Date(year, month, 1 - startDayIndex);
+    const startDate = new Date(year, month, 1 - startDayIndex, 12, 0, 0);
 
     // End date to complete 35 or 42 grid cells
     const remainingDays = 6 - lastDayOfMonth.getDay();
-    const endDate = new Date(year, month + 1, remainingDays);
+    const endDate = new Date(year, month + 1, remainingDays, 12, 0, 0);
 
     return {
       startDateStr: formatLocalDate(startDate),
@@ -152,11 +155,11 @@ export default function CalendarPage() {
 
   // Month navigation
   function prevMonth() {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1, 12, 0, 0));
   }
 
   function nextMonth() {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1, 12, 0, 0));
   }
 
   function jumpToToday() {
@@ -322,8 +325,8 @@ export default function CalendarPage() {
   const month = currentDate.getMonth();
   const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
+  const firstDay = new Date(year, month, 1, 12, 0, 0);
+  const lastDay = new Date(year, month + 1, 0, 12, 0, 0);
 
   const startDayOfWeek = firstDay.getDay(); // 0 = Sun
   const totalDaysInMonth = lastDay.getDate();
@@ -332,10 +335,10 @@ export default function CalendarPage() {
   const daysArray = [];
 
   // Previous month trailing days
-  const prevMonthLastDay = new Date(year, month, 0).getDate();
+  const prevMonthLastDay = new Date(year, month, 0, 12, 0, 0).getDate();
   for (let i = startDayOfWeek - 1; i >= 0; i--) {
     const d = prevMonthLastDay - i;
-    const dateObj = new Date(year, month - 1, d);
+    const dateObj = new Date(year, month - 1, d, 12, 0, 0);
     daysArray.push({
       dateObj,
       dateStr: formatLocalDate(dateObj),
@@ -345,9 +348,11 @@ export default function CalendarPage() {
   }
 
   // Current month days
-  const todayStr = formatLocalDate(new Date());
+  // Use a fallback for todayStr during SSR, then update on client
+  const todayStr = mounted ? formatLocalDate(new Date()) : '';
+
   for (let i = 1; i <= totalDaysInMonth; i++) {
-    const dateObj = new Date(year, month, i);
+    const dateObj = new Date(year, month, i, 12, 0, 0);
     daysArray.push({
       dateObj,
       dateStr: formatLocalDate(dateObj),
@@ -361,7 +366,7 @@ export default function CalendarPage() {
   const remainingCells = 7 - (daysArray.length % 7);
   if (remainingCells < 7) {
     for (let i = 1; i <= remainingCells; i++) {
-      const dateObj = new Date(year, month + 1, i);
+      const dateObj = new Date(year, month + 1, i, 12, 0, 0);
       daysArray.push({
         dateObj,
         dateStr: formatLocalDate(dateObj),
