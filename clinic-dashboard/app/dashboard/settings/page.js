@@ -112,7 +112,7 @@ export default function SettingsPage() {
     }
 
     // Also update today's daily settings so the change reflects instantly on the Overview page
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
     await supabase.from('doctor_daily_settings')
       .update({ time_per_patient_mins: clinic.avg_time_per_patient_mins })
       .eq('clinic_id', clinic.id)

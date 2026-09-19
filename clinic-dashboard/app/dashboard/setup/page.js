@@ -57,7 +57,7 @@ export default function DailySetupPage() {
       setStaffId(sid);
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
 
     // Batch query active doctors and settings in parallel
     const [docsRes, todaySettingsRes, recentSettingsRes] = await Promise.all([
@@ -113,7 +113,7 @@ export default function DailySetupPage() {
     if (!selectedDoctor) return;
     setIsSaving(true);
     
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
     
     try {
       await supabase.from('doctor_daily_settings').upsert({

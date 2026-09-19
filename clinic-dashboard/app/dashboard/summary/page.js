@@ -30,7 +30,7 @@ export default function SummaryPage() {
     }
 
     setLoading(true);
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
 
     // Fetch all patients for this clinic today
     const { data } = await supabase.from('patients')

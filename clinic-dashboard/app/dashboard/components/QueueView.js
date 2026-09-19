@@ -17,7 +17,7 @@ function DoctorQueuePanel({ doctor, clinicId, staffId, isOffline, doctorStartTim
 
   useEffect(() => {
     if (!clinicId) return;
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
     const startOfDay = new Date(today).toISOString();
 
     async function loadData() {
@@ -417,7 +417,7 @@ export default function QueueView({ doctorId = 'all', doctors = [], clinicId, st
 
   useEffect(() => {
     if (!clinicId) return;
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
     const startOfDay = new Date(today).toISOString();
     async function loadData() {
       const { data: patientsData } = await supabase

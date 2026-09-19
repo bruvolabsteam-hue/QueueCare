@@ -19,7 +19,7 @@ function isDoctorOffline(settings) {
   if (!settings.is_active) return true; // manually marked Not Available
   if (!settings.start_time || !settings.end_time) return true;
   const now = new Date();
-  const today = now.toISOString().split('T')[0];
+  const today = now.toLocaleDateString('en-CA');
   const startMs = new Date(`${today}T${settings.start_time}`).getTime();
   const endMs = new Date(`${today}T${settings.end_time}`).getTime();
   const nowMs = now.getTime();
@@ -194,7 +194,7 @@ export default function LiveQueuePage() {
       setStaffId(activeStaffId);
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
 
     // Fetch ALL active doctors for the modal dropdown in parallel with today's settings
     const [allDocsRes, dailySettingsRes] = await Promise.all([

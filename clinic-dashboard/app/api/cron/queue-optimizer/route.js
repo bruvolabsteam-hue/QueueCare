@@ -8,7 +8,7 @@ export async function GET(req) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
 
     // 1. Get all active clinics and their avg wait times
     const { data: clinics } = await supabase.from('clinics').select('id, avg_time_per_patient_mins, regional_language, name, phone');

@@ -73,7 +73,7 @@ export async function POST(req) {
     const avgTime = clinic?.avg_time_per_patient_mins || 10;
 
     // Get the number of people waiting ahead of them IN THIS DOCTOR'S QUEUE
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
     const { count: waitingCount } = await supabase
       .from('patients')
       .select('id', { count: 'exact', head: true })

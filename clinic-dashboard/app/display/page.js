@@ -34,7 +34,7 @@ export default function DisplayPage() {
       setClinicId(cId);
 
       // Fetch the currently called patient for today
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toLocaleDateString('en-CA');
       const startOfDay = new Date(today).toISOString();
       
       const fetchCurrent = async () => {

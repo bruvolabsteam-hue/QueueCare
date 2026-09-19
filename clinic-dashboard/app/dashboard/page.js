@@ -22,7 +22,7 @@ export default function DashboardPage() {
     let isMounted = true;
     async function fetchDashboardData() {
       setLoading(true);
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toLocaleDateString('en-CA');
       const startOfDay = `${today}T00:00:00`;
 
       // Parallelize queries

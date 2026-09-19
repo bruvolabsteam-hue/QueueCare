@@ -64,7 +64,7 @@ export async function POST(req) {
         .single();
       
       if (cancelledPatient) {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleDateString('en-CA');
         // 2. Find the NEXT waiting patient for this doctor who hasn't been called/skipped
         const { data: nextPatients } = await supabase
           .from('patients')
