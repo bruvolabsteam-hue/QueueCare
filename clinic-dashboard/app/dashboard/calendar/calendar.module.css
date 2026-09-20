@@ -217,6 +217,10 @@
   border-radius: 50%;
 }
 
+.sundayText {
+  color: #ef4444; /* red-500 */
+}
+
 .dayNumToday {
   background: linear-gradient(135deg, var(--color-brand-start), var(--color-brand-end));
   color: white !important;

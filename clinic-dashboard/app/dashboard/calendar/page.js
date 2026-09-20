@@ -453,7 +453,7 @@ export default function CalendarPage() {
         {/* Calendar Grid */}
         <div className={styles.calendarGrid}>
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className={styles.weekdayHeader}>
+            <div key={day} className={`${styles.weekdayHeader} ${day === 'Sun' ? styles.sundayText : ''}`}>
               {day}
             </div>
           ))}
@@ -468,7 +468,7 @@ export default function CalendarPage() {
                 onClick={() => openScheduleModal(cell.dateStr)}
               >
                 <div className={styles.dayHeader}>
-                  <span className={`${styles.dayNum} ${cell.isToday ? styles.dayNumToday : ''}`}>
+                  <span className={`${styles.dayNum} ${cell.isToday ? styles.dayNumToday : ''} ${idx % 7 === 0 && !cell.isToday ? styles.sundayText : ''}`}>
                     {cell.dayNum}
                   </span>
                   <button className={styles.addQuickBtn} title="Add schedule for this date">
