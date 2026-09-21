@@ -54,7 +54,7 @@ export default function PatientsPage() {
       setClinicId(cid);
     }
 
-    const today = new Date().toLocaleDateString('en-CA');
+    const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
 
     // Patients today with doctor name joined
     const { data, error } = await supabase

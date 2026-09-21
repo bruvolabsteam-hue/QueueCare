@@ -26,18 +26,78 @@ export default function CalendarPage() {
   // State
   const [clinicId, setClinicId] = useState(contextClinicId || null);
   const [doctors, setDoctors] = useState(contextDoctors || []);
+  const [eventsByDate, setEventsByDate] = useState({});
+  const [holidays, setHolidays] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Filter selected doctor
   const [selectedDoctorFilter, setSelectedDoctorFilter] = useState('all');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const docId = urlParams.get('doctor_id');
-      if (docId) setSelectedDoctorFilter(docId);
+      const searchParams = new URLSearchParams(window.location.search);
+      const docIdParam = searchParams.get('doctor_id');
+      if (docIdParam) {
+        setSelectedDoctorFilter(docIdParam);
+      }
     }
   }, []);
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(false);
+
+  const fetchEvents = useCallback(async () => {
+    if (!contextClinicId) return;
+    setLoading(true);
+    
+    try {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
+
+      // 1. Fetch Doctor Events
+      const { data: eventData, error: eventError } = await supabase.rpc('get_clinic_calendar_events', {
+        p_clinic_id: contextClinicId,
+        p_year: year,
+        p_month: month,
+        p_doctor_id: selectedDoctorFilter === 'all' ? null : selectedDoctorFilter
+      });
+
+      if (eventError) throw eventError;
+
+      // Filter events correctly if RPC ignored the param
+      let data = eventData || [];
+      if (selectedDoctorFilter !== 'all') {
+        data = data.filter(ev => ev.doctor_id === selectedDoctorFilter);
+      }
+
+      const grouped = {};
+      data.forEach(ev => {
+        if (!grouped[ev.date]) grouped[ev.date] = [];
+        grouped[ev.date].push(ev);
+      });
+      setEventsByDate(grouped);
+
+      // 2. Fetch Clinic Holidays
+      const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+      const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+      
+      const { data: holidayData, error: holError } = await supabase
+        .from('clinic_holidays')
+        .select('*')
+        .eq('clinic_id', contextClinicId)
+        .gte('holiday_date', startDate)
+        .lte('holiday_date', endDate);
+
+      if (!holError && holidayData) {
+        setHolidays(holidayData);
+      }
+      
+    } catch (err) {
+      console.error('Error fetching calendar data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [contextClinicId, currentDate, selectedDoctorFilter, supabase]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -477,6 +537,19 @@ export default function CalendarPage() {
                 </div>
 
                 <div className={styles.eventsContainer}>
+                  {/* Render Clinic Holiday if any */}
+                  {holidays.filter(h => h.holiday_date === cell.dateStr).map(h => (
+                    <div
+                      key={h.id}
+                      className={`${styles.eventChip} ${styles.eventLeave}`}
+                      style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c' }}
+                      title={h.holiday_name}
+                    >
+                      <div className={`${styles.eventIndicator} ${styles.indicatorLeave}`}></div>
+                      <span style={{ fontWeight: 600 }}>{h.holiday_name}</span>
+                    </div>
+                  ))}
+
                   {dayEvents.map(ev => {
                     const isEvLeave = ev.is_leave || !ev.is_active;
 

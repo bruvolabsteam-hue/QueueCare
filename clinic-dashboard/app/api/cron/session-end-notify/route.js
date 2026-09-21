@@ -12,7 +12,7 @@ export async function GET(request) {
     const supabase = createClient(supabaseUrl, supabaseKey);
     const superAdminUrl = process.env.NEXT_PUBLIC_SUPER_ADMIN_URL || 'https://queuecare-admin.vercel.app';
 
-    const today = new Date().toLocaleDateString('en-CA');
+    const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
     const now = new Date();
     // Current time as HH:MM:SS string (local minutes don't matter, Postgres will compare)
     const nowTimeStr = now.toTimeString().slice(0, 8); // "HH:MM:SS"

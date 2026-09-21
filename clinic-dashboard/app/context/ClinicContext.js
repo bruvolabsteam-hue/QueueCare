@@ -106,7 +106,7 @@ export function ClinicProvider({ children }) {
       setStaffData(staff || null);
 
       // Parallelize fetching clinic details, doctors, today settings, and queue count
-      const today = new Date().toLocaleDateString('en-CA');
+      const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
 
       const [clinicRes, docsRes, settingsRes, patientsRes] = await Promise.all([
         supabase.from('clinics').select('*').eq('id', cid).single(),
