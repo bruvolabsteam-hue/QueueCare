@@ -216,7 +216,9 @@ export default function CalendarPage({ defaultDoctorId = null }) {
       setMaxPatients(existingEvent.max_patients || '');
       setQueueMode(existingEvent.mode || 'walk-in');
     } else {
-      if (selectedDoctorFilter !== 'all') {
+      if (defaultDoctorId) {
+        setSelectedDoctorId(defaultDoctorId);
+      } else if (selectedDoctorFilter !== 'all') {
         setSelectedDoctorId(selectedDoctorFilter);
       } else if (doctors.length > 0) {
         setSelectedDoctorId(doctors[0].id);
@@ -580,19 +582,25 @@ export default function CalendarPage({ defaultDoctorId = null }) {
               <div className={styles.modalBody}>
                 {/* Doctor Selector */}
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Select Doctor</label>
-                  <select
-                    value={selectedDoctorId}
-                    onChange={(e) => setSelectedDoctorId(e.target.value)}
-                    className={styles.select}
-                    required
-                  >
-                    {doctors.map(d => (
-                      <option key={d.id} value={d.id}>
-                        Dr. {d.name} ({d.specialization || 'General'})
-                      </option>
-                    ))}
-                  </select>
+                  <label className={styles.label}>Doctor</label>
+                  {defaultDoctorId ? (
+                    <div style={{ padding: '0.5rem', background: '#f3f4f6', borderRadius: '0.375rem', border: '1px solid #d1d5db', color: '#4b5563', fontWeight: 600 }}>
+                      Dr. {doctors.find(d => d.id === defaultDoctorId)?.name || 'Selected Doctor'}
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedDoctorId}
+                      onChange={(e) => setSelectedDoctorId(e.target.value)}
+                      className={styles.select}
+                      required
+                    >
+                      {doctors.map(d => (
+                        <option key={d.id} value={d.id}>
+                          Dr. {d.name} ({d.specialization || 'General'})
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {/* Status Tabs: Working vs Leave */}
