@@ -167,6 +167,12 @@ export default function StaffPage() {
                   </td>
                   <td>
                     <div style={{display: 'flex', gap: '0.5rem'}}>
+                      <a 
+                        href={`/dashboard/staff/${member.id}`}
+                        style={{padding: '6px 12px', fontSize: '12px', border: '1px solid #0ea5e9', borderRadius: '6px', background: '#f0f9ff', color: '#0369a1', textDecoration: 'none', fontWeight: 600, display: 'inline-block'}}
+                      >
+                        Calendar & Profile
+                      </a>
                       <button 
                         onClick={() => { setFormData(member); setShowEditModal(true); }}
                         style={{padding: '6px 12px', fontSize: '12px', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer', fontWeight: 500}}
