@@ -160,60 +160,6 @@ export default function CalendarPage() {
     };
   }
 
-  async function fetchEvents() {
-    if (!clinicId) return;
-    const { startDateStr, endDateStr } = getGridDateRange();
-
-    const docIdParam = selectedDoctorFilter === 'all' ? null : selectedDoctorFilter;
-
-    try {
-      // 1. Try calling the get_clinic_calendar_events RPC
-      const { data, error } = await supabase.rpc('get_clinic_calendar_events', {
-        p_clinic_id: clinicId,
-        p_start_date: startDateStr,
-        p_end_date: endDateStr,
-        p_doctor_id: docIdParam
-      });
-
-      if (!error && data) {
-        // Apply client-side filter just in case the remote RPC hasn't been updated to accept p_doctor_id yet
-        const filteredData = docIdParam 
-          ? data.filter(ev => ev.doctor_id === docIdParam)
-          : data;
-        setEvents(filteredData);
-        return;
-      }
-
-      // 2. Fallback query if RPC migration hasn't been executed yet
-      let query = supabase
-        .from('doctor_daily_settings')
-        .select('*, staff(name, specialization)')
-        .eq('clinic_id', clinicId)
-        .gte('date', startDateStr)
-        .lte('date', endDateStr);
-
-      if (docIdParam) {
-        query = query.eq('doctor_id', docIdParam);
-      }
-
-      const { data: fallbackData } = await query;
-      if (fallbackData) {
-        const formatted = fallbackData.map(d => ({
-          ...d,
-          doctor_name: d.staff?.name || 'Doctor',
-          specialization: d.staff?.specialization,
-          is_leave: d.is_leave || !d.is_active,
-          start_time_formatted: d.start_time ? d.start_time.substring(0, 5) : null,
-          end_time_formatted: d.end_time ? d.end_time.substring(0, 5) : null
-        }));
-        setEvents(formatted);
-      }
-    } catch (err) {
-      console.error('Error fetching calendar events:', err);
-    }
-  }
-
-  // Month navigation
   function prevMonth() {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1, 12, 0, 0));
   }
@@ -435,15 +381,6 @@ export default function CalendarPage() {
       });
     }
   }
-
-  // Group events by date string
-  const eventsByDate = {};
-  events.forEach(ev => {
-    if (!eventsByDate[ev.date]) {
-      eventsByDate[ev.date] = [];
-    }
-    eventsByDate[ev.date].push(ev);
-  });
 
   return (
     <div className={styles.container}>
