@@ -57,6 +57,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
       const month = currentDate.getMonth() + 1;
 
       // 1. Fetch Doctor Events
+      let data = [];
       const { data: eventData, error: eventError } = await supabase.rpc('get_clinic_calendar_events', {
         p_clinic_id: contextClinicId,
         p_year: year,
@@ -64,10 +65,35 @@ export default function CalendarPage({ defaultDoctorId = null }) {
         p_doctor_id: selectedDoctorFilter === 'all' ? null : selectedDoctorFilter
       });
 
-      if (eventError) throw eventError;
+      if (eventError || !eventData) {
+        // Fallback if RPC doesn't exist or hasn't been upgraded
+        let query = supabase
+          .from('doctor_daily_settings')
+          .select('*, staff(name, specialization)')
+          .eq('clinic_id', contextClinicId)
+          .gte('date', `${year}-${String(month).padStart(2, '0')}-01`)
+          .lte('date', `${year}-${String(month).padStart(2, '0')}-31`);
+          
+        if (selectedDoctorFilter !== 'all') {
+          query = query.eq('doctor_id', selectedDoctorFilter);
+        }
+        
+        const { data: fallbackData } = await query;
+        if (fallbackData) {
+          data = fallbackData.map(d => ({
+            ...d,
+            doctor_name: d.staff?.name || 'Doctor',
+            specialization: d.staff?.specialization,
+            is_leave: d.is_leave || !d.is_active,
+            start_time_formatted: d.start_time ? d.start_time.substring(0, 5) : null,
+            end_time_formatted: d.end_time ? d.end_time.substring(0, 5) : null
+          }));
+        }
+      } else {
+        data = eventData;
+      }
 
-      // Filter events correctly if RPC ignored the param
-      let data = eventData || [];
+      // Filter events correctly if RPC ignored the param (for older RPC versions)
       if (selectedDoctorFilter !== 'all') {
         data = data.filter(ev => ev.doctor_id === selectedDoctorFilter);
       }
