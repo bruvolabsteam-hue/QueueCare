@@ -16,7 +16,7 @@ const formatLocalDate = (d) => {
 
 export const dynamic = 'force-dynamic';
 
-export default function CalendarPage() {
+export default function CalendarPage({ defaultDoctorId = null }) {
   const supabase = createClient();
   const { clinicId: contextClinicId, doctors: contextDoctors } = useClinic();
 
@@ -34,14 +34,16 @@ export default function CalendarPage() {
   const [selectedDoctorFilter, setSelectedDoctorFilter] = useState('all');
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (defaultDoctorId) {
+      setSelectedDoctorFilter(defaultDoctorId);
+    } else if (typeof window !== 'undefined') {
       const searchParams = new URLSearchParams(window.location.search);
       const docIdParam = searchParams.get('doctor_id');
       if (docIdParam) {
         setSelectedDoctorFilter(docIdParam);
       }
     }
-  }, []);
+  }, [defaultDoctorId]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
@@ -406,19 +408,23 @@ export default function CalendarPage() {
           </div>
 
           <div className={styles.rightControls}>
-            <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Doctor:</label>
-            <select
-              value={selectedDoctorFilter}
-              onChange={(e) => setSelectedDoctorFilter(e.target.value)}
-              className={styles.selectDoctor}
-            >
-              <option value="all">All Doctors</option>
-              {doctors.map(doc => (
-                <option key={doc.id} value={doc.id}>
-                  Dr. {doc.name}
-                </option>
-              ))}
-            </select>
+            {!defaultDoctorId && (
+              <>
+                <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Doctor:</label>
+                <select
+                  value={selectedDoctorFilter}
+                  onChange={(e) => setSelectedDoctorFilter(e.target.value)}
+                  className={styles.selectDoctor}
+                >
+                  <option value="all">All Doctors</option>
+                  {doctors.map(doc => (
+                    <option key={doc.id} value={doc.id}>
+                      Dr. {doc.name}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
 
             <button
               onClick={() => openScheduleModal(todayStr)}

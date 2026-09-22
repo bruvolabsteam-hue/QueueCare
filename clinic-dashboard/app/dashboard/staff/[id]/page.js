@@ -98,16 +98,10 @@ export default function DoctorProfilePage({ params }) {
           Manage shifts, working hours, and leaves specifically for Dr. {doctor.name}.
         </p>
         
-        {/* We can re-use the existing CalendarPage but force it to filter to this doctor by pushing it to an iframe or by rendering it as a component. 
-            Since CalendarPage expects to be a full page, rendering it as a component might inherit layout issues.
-            However, CalendarPage is heavily coupled to URL parameters (doctor_id) in useEffect.
-        */}
         <div className={styles.calendarWrapper}>
-          <iframe 
-            src={`/dashboard/calendar?doctor_id=${doctorId}`}
-            style={{ width: '100%', height: 'calc(100vh - 250px)', border: 'none', borderRadius: '12px' }}
-            title={`${doctor.name} Calendar`}
-          />
+          <div style={{ height: '700px', overflowY: 'auto' }}>
+            <CalendarPage defaultDoctorId={doctorId} />
+          </div>
         </div>
       </div>
     </div>
