@@ -1,7 +1,7 @@
 /* eslint-disable */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useClinic } from '../../context/ClinicContext';
 import styles from './calendar.module.css';
