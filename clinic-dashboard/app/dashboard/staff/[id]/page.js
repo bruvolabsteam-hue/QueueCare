@@ -6,10 +6,12 @@ import { useClinic } from '../../../context/ClinicContext';
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import styles from './doctor-profile.module.css';
+import { useParams } from 'next/navigation';
 import CalendarPage from '../../calendar/page';
 
-export default function DoctorProfilePage({ params }) {
-  const doctorId = params.id;
+export default function DoctorProfilePage() {
+  const params = useParams();
+  const doctorId = params?.id;
   const supabase = createClient();
   const { clinicId: contextClinicId } = useClinic();
   
