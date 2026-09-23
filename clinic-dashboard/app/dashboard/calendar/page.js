@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useClinic } from '../../context/ClinicContext';
 import styles from './calendar.module.css';
 import { ChevronLeft, ChevronRight, Plus, Clock, Users, Video, MapPin, X } from 'lucide-react';
+import Link from 'next/link';
 
 const formatLocalDate = (d) => {
   const yyyy = d.getFullYear();
@@ -127,8 +128,9 @@ export default function CalendarPage({ defaultDoctorId = null }) {
     }
   }, [contextClinicId, currentDate, selectedDoctorFilter, supabase]);
 
-  // Modal State
+  // Modal & Tooltip State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [hoveredDate, setHoveredDate] = useState(null);
   const [selectedDateStr, setSelectedDateStr] = useState('');
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
   const [isLeave, setIsLeave] = useState(false);
@@ -542,14 +544,20 @@ export default function CalendarPage({ defaultDoctorId = null }) {
                         <div
                           className={`${styles.eventIndicator} ${isEvLeave ? styles.indicatorLeave : styles.indicatorAvailable}`}
                         ></div>
-                        <span style={{ fontWeight: 600 }}>{ev.doctor_name}</span>
+                        <Link 
+                          href={`/dashboard/staff/${ev.doctor_id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ fontWeight: 600, color: 'inherit', textDecoration: 'none' }}
+                        >
+                          {ev.doctor_name}
+                        </Link>
                         {!isEvLeave && ev.start_time_formatted && (
-                          <span style={{ opacity: 0.85, fontSize: '0.7rem' }}>
+                          <span style={{ opacity: 0.85, fontSize: '0.7rem', marginLeft: '4px' }}>
                             ({ev.start_time_formatted})
                           </span>
                         )}
                         {isEvLeave && (
-                          <span style={{ opacity: 0.85, fontSize: '0.7rem' }}>
+                          <span style={{ opacity: 0.85, fontSize: '0.7rem', marginLeft: '4px' }}>
                             ({ev.leave_reason || 'Off'})
                           </span>
                         )}
@@ -557,6 +565,43 @@ export default function CalendarPage({ defaultDoctorId = null }) {
                     );
                   })}
                 </div>
+
+                {hoveredDate === cell.dateStr && dayEvents.length > 0 && (
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      backgroundColor: 'white',
+                      border: '1px solid #e5e7eb',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      zIndex: 50,
+                      width: '250px',
+                      marginTop: '4px'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', borderBottom: '1px solid #e5e7eb', paddingBottom: '4px', color: '#374151' }}>
+                      {new Date(cell.dateStr).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </h4>
+                    {dayEvents.map(ev => (
+                      <div key={ev.id || `${ev.doctor_id}_${ev.date}`} style={{ marginBottom: '8px', fontSize: '12px' }}>
+                        <Link 
+                          href={`/dashboard/staff/${ev.doctor_id}`}
+                          style={{ fontWeight: 'bold', color: '#0ea5e9', textDecoration: 'none', display: 'block' }}
+                        >
+                          Dr. {ev.doctor_name}
+                        </Link>
+                        <div style={{ color: '#6b7280' }}>
+                          {ev.is_leave ? 'On Leave' : `${ev.start_time_formatted || '09:00 AM'} - ${ev.end_time_formatted || '05:00 PM'}`}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -822,3 +867,6 @@ export default function CalendarPage({ defaultDoctorId = null }) {
     </div>
   );
 }
+
+
+
