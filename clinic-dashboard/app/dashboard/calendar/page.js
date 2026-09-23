@@ -344,9 +344,11 @@ export default function CalendarPage({ defaultDoctorId = null }) {
 
         if (rpcErr) {
           // Direct Supabase upsert fallback
-          await supabase.from('doctor_daily_settings').upsert(payload, {
-            onConflict: 'doctor_id, date'
-          });
+            const { error: err1 } = await supabase.from('doctor_daily_settings').upsert(payload, { onConflict: 'clinic_id,doctor_id,date' });
+            if (err1) {
+              const { error: err2 } = await supabase.from('doctor_daily_settings').upsert(payload, { onConflict: 'doctor_id,date' });
+              if (err2) throw new Error(err2.message || err1.message);
+            }
         }
       }
 
@@ -894,6 +896,11 @@ export default function CalendarPage({ defaultDoctorId = null }) {
     </div>
   );
 }
+
+
+
+
+
 
 
 
