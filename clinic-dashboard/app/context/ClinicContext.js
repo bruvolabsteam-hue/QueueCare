@@ -109,8 +109,8 @@ export function ClinicProvider({ children }) {
       const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
 
       const [clinicRes, docsRes, settingsRes, patientsRes] = await Promise.all([
-        supabase.from('clinics').select('*').eq('id', cid).single(),
-        supabase.from('staff').select('*').eq('clinic_id', cid).eq('role', 'doctor').eq('is_active', true).order('name'),
+        supabase.from('clinics').select('*').eq('id', cid).maybeSingle(),
+        supabase.from('staff').select('*').eq('clinic_id', cid).eq('is_active', true).order('name'),
         supabase.from('doctor_daily_settings').select('*').eq('clinic_id', cid).eq('date', today),
         supabase.from('patients').select('id, doctor_id, status').eq('clinic_id', cid).gte('created_at', `${today}T00:00:00`)
       ]);
@@ -118,7 +118,7 @@ export function ClinicProvider({ children }) {
       const clinicDetails = clinicRes.data || null;
       setClinic(clinicDetails);
 
-      const allDocs = docsRes.data || [];
+      const allDocs = (docsRes.data || []).filter(d => d.role?.toLowerCase() === 'doctor');
       const allSettings = settingsRes.data || [];
       const allPatients = patientsRes.data || [];
 

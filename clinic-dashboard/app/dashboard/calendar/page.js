@@ -25,7 +25,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
 
   // State
   const [clinicId, setClinicId] = useState(contextClinicId || null);
-  const [doctors, setDoctors] = useState(contextDoctors || []);
+  const doctors = contextDoctors || [];
   const [eventsByDate, setEventsByDate] = useState({});
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -149,13 +149,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
     if (contextClinicId && contextClinicId !== clinicId) {
       setClinicId(contextClinicId);
     }
-    if (contextDoctors && contextDoctors.length > 0) {
-      setDoctors(contextDoctors);
-      if (!selectedDoctorId) {
-        setSelectedDoctorId(contextDoctors[0].id);
-      }
-    }
-  }, [contextClinicId, contextDoctors]);
+  }, [contextClinicId]);
 
   // Rely entirely on ClinicContext which properly handles impersonation and auth
 
