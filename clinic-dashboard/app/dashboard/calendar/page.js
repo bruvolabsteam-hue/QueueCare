@@ -450,7 +450,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
                   <option value="all">All Doctors</option>
                   {doctors.map(doc => (
                     <option key={doc.id} value={doc.id}>
-                      Dr. {doc.name}
+                      {doc.name}
                     </option>
                   ))}
                 </select>
@@ -593,7 +593,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
                           href={`/dashboard/staff/${ev.doctor_id}`}
                           style={{ fontWeight: 'bold', color: '#0ea5e9', textDecoration: 'none', display: 'block' }}
                         >
-                          Dr. {ev.doctor_name}
+                          {ev.doctor_name}
                         </Link>
                         <div style={{ color: '#6b7280' }}>
                           {ev.is_leave ? 'On Leave' : `${ev.start_time_formatted || '09:00 AM'} - ${ev.end_time_formatted || '05:00 PM'}`}
@@ -631,7 +631,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
                   <label className={styles.label}>Doctor</label>
                   {defaultDoctorId ? (
                     <div style={{ padding: '0.5rem', background: '#f3f4f6', borderRadius: '0.375rem', border: '1px solid #d1d5db', color: '#4b5563', fontWeight: 600 }}>
-                      Dr. {doctors.find(d => d.id === defaultDoctorId)?.name || 'Selected Doctor'}
+                      {doctors.find(d => d.id === defaultDoctorId)?.name || 'Selected Doctor'}
                     </div>
                   ) : (
                     <select
@@ -641,11 +641,16 @@ export default function CalendarPage({ defaultDoctorId = null }) {
                       required
                     >
                       <option value="" disabled>Select a doctor...</option>
-                      {doctors.map(d => (
-                        <option key={d.id} value={d.id}>
-                          Dr. {d.name} ({d.specialization || 'General'})
-                        </option>
-                      ))}
+                      {doctors.map(d => {
+                        const isDoc = d.role?.toLowerCase() === 'doctor';
+                        const prefix = isDoc ? 'Dr. ' : '';
+                        const suffix = d.specialization || d.role || 'Staff';
+                        return (
+                          <option key={d.id} value={d.id}>
+                            {prefix}{d.name} ({suffix})
+                          </option>
+                        );
+                      })}
                     </select>
                   )}
                 </div>
@@ -867,6 +872,8 @@ export default function CalendarPage({ defaultDoctorId = null }) {
     </div>
   );
 }
+
+
 
 
 

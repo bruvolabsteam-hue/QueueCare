@@ -118,7 +118,7 @@ export function ClinicProvider({ children }) {
       const clinicDetails = clinicRes.data || null;
       setClinic(clinicDetails);
 
-      const allDocs = (docsRes.data || []).filter(d => d.role?.toLowerCase() === 'doctor');
+      const allDocs = docsRes.data || [];
       const allSettings = settingsRes.data || [];
       const allPatients = patientsRes.data || [];
 
