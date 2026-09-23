@@ -235,6 +235,13 @@ export default function CalendarPage({ defaultDoctorId = null }) {
     setIsModalOpen(true);
   }
 
+  // Auto-select first doctor if missing
+  useEffect(() => {
+    if (isModalOpen && !selectedDoctorId && doctors.length > 0 && !defaultDoctorId) {
+      setSelectedDoctorId(doctors[0].id);
+    }
+  }, [isModalOpen, doctors, selectedDoctorId, defaultDoctorId]);
+
   // Quick preset helper
   function applyPreset(preset) {
     if (preset === 'morning') {
@@ -594,6 +601,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
                       className={styles.select}
                       required
                     >
+                      <option value="" disabled>Select a doctor...</option>
                       {doctors.map(d => (
                         <option key={d.id} value={d.id}>
                           Dr. {d.name} ({d.specialization || 'General'})
