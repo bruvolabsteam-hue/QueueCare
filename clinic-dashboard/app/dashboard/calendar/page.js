@@ -26,7 +26,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
 
   // State
   const [clinicId, setClinicId] = useState(contextClinicId || null);
-  const doctors = contextDoctors || [];
+  const [doctors, setDoctors] = useState(contextDoctors || []);
   const [eventsByDate, setEventsByDate] = useState({});
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -48,6 +48,28 @@ export default function CalendarPage({ defaultDoctorId = null }) {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
+
+  // Robustly fetch all staff manually to bypass any context issues
+  useEffect(() => {
+    async function loadStaff() {
+      if (!contextClinicId) return;
+      try {
+        const { data } = await supabase
+          .from('staff')
+          .select('*')
+          .eq('clinic_id', contextClinicId)
+          .eq('is_active', true)
+          .order('name');
+        
+        if (data && data.length > 0) {
+          setDoctors(data);
+        }
+      } catch (err) {
+        console.error("Error fetching staff for calendar:", err);
+      }
+    }
+    loadStaff();
+  }, [contextClinicId, supabase]);
 
   const fetchEvents = useCallback(async () => {
     if (!contextClinicId) return;
@@ -126,7 +148,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
     } finally {
       setLoading(false);
     }
-  }, [contextClinicId, currentDate, selectedDoctorFilter, supabase]);
+  }, [contextClinicId, currentDate, selectedDoctorFilter, supabase, doctors]);
 
   // Modal & Tooltip State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -157,10 +179,10 @@ export default function CalendarPage({ defaultDoctorId = null }) {
 
   // Fetch events whenever month, clinic, or doctor filter changes
   useEffect(() => {
-    if (clinicId) {
+    if (clinicId && doctors.length > 0) {
       fetchEvents();
     }
-  }, [clinicId, currentDate, selectedDoctorFilter]);
+  }, [clinicId, currentDate, selectedDoctorFilter, doctors, fetchEvents]);
 
   // Get start and end of the visible month grid
   function getGridDateRange() {
