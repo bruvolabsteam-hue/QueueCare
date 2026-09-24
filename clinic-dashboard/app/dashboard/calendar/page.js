@@ -95,7 +95,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
           .select('*, staff(name, specialization)')
           .eq('clinic_id', contextClinicId)
           .gte('date', `${year}-${String(month).padStart(2, '0')}-01`)
-          .lte('date', `${year}-${String(month).padStart(2, '0')}-31`);
+          .lte('date', `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`);
           
         if (selectedDoctorFilter !== 'all') {
           query = query.eq('doctor_id', selectedDoctorFilter);
@@ -130,7 +130,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
 
       // 2. Fetch Clinic Holidays
       const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-      const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+      const endDate = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`;
       
       const { data: holidayData, error: holError } = await supabase
         .from('clinic_holidays')
@@ -896,6 +896,10 @@ export default function CalendarPage({ defaultDoctorId = null }) {
     </div>
   );
 }
+
+
+
+
 
 
 
