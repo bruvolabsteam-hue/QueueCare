@@ -62,8 +62,9 @@ export default function CalendarPage({ defaultDoctorId = null }) {
           .order('name');
         
         if (data && data.length > 0) {
-          setDoctors(data);
-        }
+            const filtered = data.filter(d => { const r = (d.role || '').toLowerCase(); return r !== 'admin' && r !== 'clinic admin' && r !== 'clinic_admin' && r !== 'super_admin'; });
+            setDoctors(filtered);
+          }
       } catch (err) {
         console.error("Error fetching staff for calendar:", err);
       }
@@ -904,6 +905,8 @@ export default function CalendarPage({ defaultDoctorId = null }) {
     </div>
   );
 }
+
+
 
 
 

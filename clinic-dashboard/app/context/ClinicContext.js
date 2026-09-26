@@ -108,12 +108,10 @@ export function ClinicProvider({ children }) {
       // Parallelize fetching clinic details, doctors, today settings, and queue count
       const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
 
-      const [clinicRes, docsRes, settingsRes, patientsRes] = await Promise.all([
-        supabase.from('clinics').select('*').eq('id', cid).maybeSingle(),
-        supabase.from('staff').select('*').eq('clinic_id', cid).eq('is_active', true).order('name'),
-        supabase.from('doctor_daily_settings').select('*').eq('clinic_id', cid).eq('date', today),
-        supabase.from('patients').select('id, doctor_id, status').eq('clinic_id', cid).gte('created_at', `${today}T00:00:00`)
-      ]);
+      const clinicRes = await supabase.from('clinics').select('*').eq('id', cid).maybeSingle().catch(e => ({ data: null, error: e }));
+        const docsRes = await supabase.from('staff').select('*').eq('clinic_id', cid).eq('is_active', true).order('name').catch(e => ({ data: [], error: e }));
+        const settingsRes = await supabase.from('doctor_daily_settings').select('*').eq('clinic_id', cid).eq('date', today).catch(e => ({ data: [], error: e }));
+        const patientsRes = await supabase.from('patients').select('id, doctor_id, status').eq('clinic_id', cid).gte('created_at', `${today}T00:00:00`).catch(e => ({ data: [], error: e }));
 
       const clinicDetails = clinicRes.data || null;
       setClinic(clinicDetails);
@@ -248,3 +246,10 @@ export function useClinic() {
   }
   return context;
 }
+
+
+
+
+
+
+
