@@ -146,25 +146,8 @@ function DashboardLayoutInner({ children }) {
             </div>
 
             {/* Admin Avatar Profile - click opens doctor roster */}
-            <div
-              className={styles.userProfile}
-              onClick={() => {
-                if (doctors.length > 0) {
-                  openDoctorDetails(doctors[0]);
-                }
-              }}
-              title="Click to view all clinic doctors and details"
-            >
-              <div className={styles.avatar}>
-                {userName ? userName.replace(/^Dr\.?\s*/i, '').charAt(0).toUpperCase() : 'A'}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span className={styles.userName}>{userName}</span>
-                <span style={{ fontSize: '0.7rem', color: '#64748b', lineHeight: 1 }}>Clinic Admin</span>
-              </div>
             </div>
-          </div>
-        </header>
+          </header>
         
         <div className={styles.content}>
           {children}
@@ -184,3 +167,4 @@ export default function DashboardLayout({ children }) {
     </ClinicProvider>
   );
 }
+
