@@ -344,19 +344,14 @@ export default function CalendarPage({ defaultDoctorId = null }) {
 
         if (rpcErr) {
           // Direct Supabase upsert fallback
-            const fallbackPayload = { ...payload };
-            delete fallbackPayload.is_leave;
-            delete fallbackPayload.leave_reason;
-            const { error: err1 } = await supabase.from('doctor_daily_settings').upsert(fallbackPayload, { onConflict: 'clinic_id,doctor_id,date' });
-            if (err1) {
-              const { error: err2 } = await supabase.from('doctor_daily_settings').upsert(fallbackPayload, { onConflict: 'doctor_id,date' });
-              if (err2) throw new Error(err2.message || err1.message);
-            }
-          } = await supabase.from('doctor_daily_settings').upsert(payload, { onConflict: 'clinic_id,doctor_id,date' });
-            if (err1) {
-              const { error: err2 } = await supabase.from('doctor_daily_settings').upsert(payload, { onConflict: 'doctor_id,date' });
-              if (err2) throw new Error(err2.message || err1.message);
-            }
+          const fallbackPayload = { ...payload };
+          delete fallbackPayload.is_leave;
+          delete fallbackPayload.leave_reason;
+          const { error: err1 } = await supabase.from('doctor_daily_settings').upsert(fallbackPayload, { onConflict: 'clinic_id,doctor_id,date' });
+          if (err1) {
+            const { error: err2 } = await supabase.from('doctor_daily_settings').upsert(fallbackPayload, { onConflict: 'doctor_id,date' });
+            if (err2) throw new Error(err2.message || err1.message);
+          }
         }
       }
 
@@ -906,6 +901,11 @@ export default function CalendarPage({ defaultDoctorId = null }) {
     </div>
   );
 }
+
+
+
+
+
 
 
 
