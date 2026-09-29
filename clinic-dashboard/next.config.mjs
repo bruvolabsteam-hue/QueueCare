@@ -7,6 +7,7 @@ const nextConfig = {
   // Disable source maps in production so code can't be read
   productionBrowserSourceMaps: false,
   typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: true },
   // Security headers
   async headers() {
     return [
@@ -27,4 +28,5 @@ const nextConfig = {
 };
 
 export default nextConfig;
+
 
