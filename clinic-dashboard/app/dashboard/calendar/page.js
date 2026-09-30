@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 
 export default function CalendarPage({ defaultDoctorId = null }) {
   const supabase = createClient();
-  const { clinicId: contextClinicId, doctors: contextDoctors } = useClinic();
+  const { clinicId: contextClinicId, doctors: contextDoctors, refreshClinicData } = useClinic();
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -179,7 +179,6 @@ export default function CalendarPage({ defaultDoctorId = null }) {
   useEffect(() => {
     if (clinicId && doctors.length > 0) {
       fetchEvents();
-        if (refreshClinicData) refreshClinicData();
     }
   }, [clinicId, currentDate, selectedDoctorFilter, doctors, fetchEvents]);
 
@@ -305,7 +304,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
         if (!batchErr) {
           setIsModalOpen(false);
           fetchEvents();
-        if (refreshClinicData) refreshClinicData();
+          if (refreshClinicData) refreshClinicData();
           return;
         }
       }
@@ -357,7 +356,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
 
       setIsModalOpen(false);
       fetchEvents();
-        if (refreshClinicData) refreshClinicData();
+      if (refreshClinicData) refreshClinicData();
     } catch (err) {
       console.error('Error saving schedule:', err);
       alert('Error saving schedule: ' + err.message);
@@ -380,7 +379,7 @@ export default function CalendarPage({ defaultDoctorId = null }) {
 
       setIsModalOpen(false);
       fetchEvents();
-        if (refreshClinicData) refreshClinicData();
+      if (refreshClinicData) refreshClinicData();
     } catch (err) {
       alert('Error deleting entry: ' + err.message);
     } finally {
@@ -901,6 +900,20 @@ export default function CalendarPage({ defaultDoctorId = null }) {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
